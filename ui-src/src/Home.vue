@@ -1,38 +1,41 @@
 <template>
-  <div>
-    <!-- 主体列表 -->
-    <van-empty v-show="!moduleInfo.status" image="network" :description="t('common.service_no_run')">
-      <van-button round type="primary" class="bottom-button" @click="startService">{{
-        t('common.service_start') }}</van-button>
-    </van-empty>
+  <!-- 主体列表 -->
+  <van-empty v-show="!moduleInfo.serviceState" image="network" :description="t('common.service_no_run')">
+    <van-button round type="primary" class="bottom-button" @click="startService">{{
+      t('common.service_start') }}</van-button>
+  </van-empty>
+  <van-field v-model="runMode" is-link readonly name="picker" :label="$t('common.run_mode')"
+    :placeholder="t('network.default_run_mode_tips')" @click="showRunModePicker = true"
+    :disabled="moduleInfo.serviceState" />
+  <van-popup v-model:show="showRunModePicker" destroy-on-close position="bottom">
+    <van-picker :columns="runModeOption" v-model="selectedValues" @confirm="onConfirm"
+      @cancel="showRunModePicker = false" />
+  </van-popup>
+  <div v-show="runMode == 'command'">
     <van-cell-group inset :title="t('common.base_settings')">
-      <van-field v-model="runMode" is-link readonly name="picker" :label="$t('common.run_mode')"
+      <!-- <van-field v-model="runMode" is-link readonly name="picker" :label="$t('common.run_mode')"
         :placeholder="t('network.default_run_mode_tips')" @click="showRunModePicker = true"
-        :disabled="moduleInfo.status" />
-      <van-popup v-model:show="showRunModePicker" destroy-on-close position="bottom">
-        <van-picker :columns="runModeOption" v-model="selectedValues" @confirm="onConfirm"
-          @cancel="showRunModePicker = false" />
-      </van-popup>
+        :disabled="moduleInfo.serviceState" /> -->
       <van-field v-model="networkId" name="networkName" :label="t('network.networkName')"
-        :placeholder="t('network.networkName')" :disabled="moduleInfo.status"
+        :placeholder="t('network.networkName')" :disabled="moduleInfo.serviceState"
         :rules="[{ required: true, message: t('network.networkNameTips') }]" />
       <van-field v-model="networkPassWd" :label="t('network.network_secret')" right-icon="warning-o" type="password"
-        :disabled="moduleInfo.status" @click-right-icon="showPassword" />
+        :disabled="moduleInfo.serviceState" @click-right-icon="showPassword" />
       <van-field name="switch" :label="t('network.virtual_ipv4_dhcp')">
         <template #input>
-          <van-switch v-model="checked" :disabled="moduleInfo.status" />
+          <van-switch v-model="dhcpEnable" :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
       <van-field v-model="value3" :name="virtual_ipv4" :label="t('network.virtual_ipv4')" placeholder="10.0.0.1/24"
-        :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.status" />
+        :rules="[{ validator: validatorMessage }]" :disabled="dhcpEnable" />
       <van-field v-model="value3" name="" :label="t('network.peer_urls')" placeholder="tcp://public.easytier.top:11010"
-        :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.status" />
+        :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.serviceState" />
     </van-cell-group>
     <van-cell-group inset :title="t('common.advanced_settings')">
       <van-field v-model="value3" :label="t('network.proxy_cidrs')" name="proxy_cidrs" placeholder="192.168.0.0/24"
-        :disabled="moduleInfo.status" :rules="[{ validator: validatorMessage }]" />
+        :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
       <van-field v-model="result" is-link readonly name="picker" :label="t('network.listenPort')" placeholder="不监听"
-        :disabled="moduleInfo.status" @click="showPicker2 = true" />
+        :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
       <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
         <van-picker :columns="columns2" v-model="selectedValues" @confirm="onConfirm" @cancel="showPicker2 = false" />
       </van-popup>
@@ -42,7 +45,7 @@
       </template>
     </van-field> -->
       <van-field v-model="value3" name="hostName" :label="t('network.hostName')" :placeholder="t('network.hostName')" />
-      <van-field name="checkboxGroup" :label="t('network.flags_switch')" :disabled="moduleInfo.status">
+      <van-field name="checkboxGroup" :label="t('network.flags_switch')" :disabled="moduleInfo.serviceState">
         <template #input>
           <van-checkbox-group v-model="checked" direction="horizontal" shape="square">
             <van-space direction="vertical" fill>
@@ -121,33 +124,73 @@
       <van-field v-model="loggin" is-link readonly name="picker" :label="t('common.logging')"
         :placeholder="t('common.close')" @click="showLogginPicker = true" />
       <van-popup v-model:show="showLogginPicker" destroy-on-close position="bottom">
-        <van-picker :columns="logLevel" v-model="selectedValues" @confirm="onConfirm" @cancel="showLogginPicker = false" />
+        <van-picker :columns="logLevel" v-model="selectedValues" @confirm="onConfirm"
+          @cancel="showLogginPicker = false" />
       </van-popup>
       <van-field v-model="value3" name="rpcPort" :label="t('network.rpc_port')" placeholder="15888"
         :rules="[{ validator: validatorMessage }]" />
       <van-field v-model="value3" name="tunName" :label="t('network.tun_name')" placeholder="留空自动生成" />
     </van-cell-group>
   </div>
-
+  <div v-show="runMode == 'web'">
+    <van-cell-group inset :title="t('network.webMode')">
+      <van-field v-model="value3" :label="t('network.proxy_cidrs')" name="proxy_cidrs" placeholder="192.168.0.0/24"
+        :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
+    </van-cell-group>
+  </div>
+  <div v-show="runMode == 'file'">
+    <van-cell-group inset :title="t('network.fileMode')">
+      <van-cell center title="操作">
+        <template #right-icon>
+          <van-button type="primary" size="mini" icon="replay" plain @click="reload()">重载配置</van-button>
+          <van-button type="primary" size="mini" icon="plus" plain @click="update"
+            :disabled="disabled">保存配置</van-button>
+        </template>
+      </van-cell>
+      <codemirror v-model:value="code" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
+        :extensions="extensions" @ready="handleReady" :autofocus="true" :indent-with-tab="true"/>
+    </van-cell-group>
+  </div>
 
 </template>
-
+<style>
+/* .CodeMirror {
+  width: 92vw !important;
+} */
+</style>
 <script setup>
-defineProps(["theme"]);//接收父组件传来的值
-import { onMounted } from 'vue';
-import { JsonViewer } from "vue3-json-viewer"
+const props=defineProps({
+  theme: Boolean
+})
+//接收父组件传来的值
+console.info(`theme:${props.theme}`)
+import { onMounted,watch } from 'vue';
 import { MODDIR, ZTPATH, execCmd } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
+import { Codemirror } from "vue-codemirror";
+import { StreamLanguage } from "@codemirror/language"
+import { toml } from "@codemirror/legacy-modes/mode/toml"
+import { oneDark } from "@codemirror/theme-one-dark";
+import { EditorView } from "@codemirror/view";
+import {Compartment,StateEffect} from "@codemirror/state"
+
+
 const { t } = useI18n();
 const moduleInfo = useModuleInfoStore();
 const checked = ref([]);
+let compartment = new Compartment()
 
+let extensions = [StreamLanguage.define(toml),oneDark];
+const view = shallowRef()
+const code = ref('')
 const chosenAddressId = ref('1');
 const networkId = ref('');
 const networkPassWd = ref('');
 const loading = ref(false);
+const dhcpEnable = ref(false);
 const readonly = ref(false);
+const dhcp = ref(false);
 const show = ref(false);
 const activeNames = ref(null);
 const ready = ref(false);
@@ -198,11 +241,25 @@ const value3 = ref('');
 const loggin = ref('');
 // ======== method=========
 onMounted(() => {
-
+  console.info(moduleInfo.serviceState)
+  init()
+  watch(() => props.theme, (newVal, oldVal) => {
+  console.log(`theme 变化了: ${oldVal} -> ${newVal}`)
+  if(!newVal){
+    extensions = [ compartment.of(StreamLanguage.define(toml)) ,compartment.of(oneDark)];
+  }else{
+    extensions = [compartment.of(StreamLanguage.define(toml))];
+  }
+  view.value.dispatch({ effects: compartment.reconfigure(extensions) }) // reconfigure
 })
+})
+const handleReady = (payload) => {
+  view.value = payload.view
+}
 const onConfirm = ({ selectedValues }) => {
   showToast(`当前值: ${selectedValues.join(',')}`);
   runMode.value = selectedValues.join(',');
+  showRunModePicker.value = false;
 };
 const onChange = ({ selectedValues }) => {
   showToast(`当前值: ${selectedValues.join(',')}`);
@@ -241,7 +298,7 @@ const startServiceConfirm = () => {
 }
 //新增或修改
 const newAdd = (index) => {
-  if (!moduleInfo.getServiceState) {
+  if (!moduleInfo.getServiceState()) {
     startServiceConfirm()
     return;
   }
@@ -263,7 +320,7 @@ const newAdd = (index) => {
   chosenAddressId.value = index;
 }
 const changeStatus = (index) => {
-  if (!moduleInfo.getServiceState) {
+  if (!moduleInfo.getServiceState()) {
     startServiceConfirm()
     return;
   }
@@ -281,81 +338,8 @@ const changeStatus = (index) => {
     localStorage.setItem("EasytierForKSU.leaveNetwork", JSON.stringify(nleaveNetwork));
   }
 }
-const delNode = (index) => {
-  if (!moduleInfo.getServiceState) {
-    startServiceConfirm()
-    return;
-  }
-  showConfirmDialog({
-    title: t('home.leave_confirm'),
-  })
-    .then(() => {
-      let leaveNetwork = JSON.parse(localStorage.getItem('EasytierForKSU.leaveNetwork'));
-      let status = items[index];
-      items.splice(index, 1)
-      leaveApi(status)
-      if (leaveNetwork.length > 0) {
-        const nleaveNetwork = leaveNetwork.filter(item => item.id !== status.id);
-        localStorage.setItem("EasytierForKSU.leaveNetwork", JSON.stringify(nleaveNetwork));
-      }
-      return true;
-    })
-    .catch(() => resolve(true));
-}
-const joinApi = (info) => {
-  if (!moduleInfo.getServiceState) {
-    startServiceConfirm()
-    return;
-  }
-  const postData = JSON.stringify(info)
-  execCmd(`sh ${MODDIR}/api.sh local network join ${info.id} '${postData}'`).then(v => {
-    try {
-      const statusObj = JSON.parse(v);
-      console.info(statusObj);
-      showToast(t('network.operation_success'));
-      setTimeout(() => {
-        window.location.reload();
-      }, 50);
-    } catch (error) {
-      showDialog({
-        title: t('network.operation_fail'),
-        message: v
-      }).then(() => {
-        // on close
-      });
-    }
-
-  });
-}
-const leaveApi = (info) => {
-  if (!moduleInfo.getServiceState) {
-    startServiceConfirm()
-    return;
-  }
-  execCmd(`sh ${MODDIR}/api.sh local network leave ${info.id}`).then(v => {
-    try {
-      let leaveNetwork = JSON.parse(localStorage.getItem('EasytierForKSU.leaveNetwork'));
-      const statusObj = JSON.parse(v);
-      console.info(statusObj);
-      leaveNetwork.push(info)
-      localStorage.setItem("EasytierForKSU.leaveNetwork", JSON.stringify(leaveNetwork));
-      // showToast('完成,即将重载列表');
-      // setTimeout(() => {
-      //   window.location.reload();
-      // }, 50);
-    } catch (error) {
-      console.error(v);
-      showDialog({
-        title: t('network.operation_fail'),
-        message: v
-      }).then(() => {
-        // on close
-      });
-    }
-  });
-}
 const getList = () => {
-  if (!moduleInfo.getServiceState) {
+  if (!moduleInfo.getServiceState()) {
     startServiceConfirm()
     return;
   }
@@ -375,19 +359,6 @@ const getList = () => {
     }
   });
 }
-const addOrUpdateBtn = (action) =>
-  new Promise((resolve) => {
-    if (action === 'confirm') {
-      // items.push(info);
-      joinApi(info)
-      setTimeout(() => {
-        resolve(true)
-      }, 50);
-    } else if (action === 'cancel') {
-      resolve(true);
-      // reset();
-    }
-  });
 
 const init = () => {
   console.info('init')
@@ -420,15 +391,7 @@ const init = () => {
     closeToast()
   }, 1000)
 }
-init()
 
-//加载路由并配置防火墙
-// const loadRouter=()=>{
-//   const defaultRoterMode=localStorage.getItem('EasytierForKSU.defaultRoterMode')
-//   execCmd(`sh ${MODDIR}/api.sh local router ${defaultRoterMode} `).then(v => {
-//   })
-// }
-defineExpose({ newAdd });
 
 </script>
 

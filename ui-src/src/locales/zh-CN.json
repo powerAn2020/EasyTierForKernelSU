@@ -57,10 +57,10 @@
     "flags_switch": "功能开关",
     "hostName": "主机名",
     "latencyFirst": "开启低延迟优先",
-    "multiThread": "使用多线程运行",
     "listenIPv6": "监听IPV6",
     "listenPort": "监听端口",
     "maxMembers": "用户数",
+    "multiThread": "使用多线程运行",
     "networkCount": "网络数",
     "networkName": "网络名称",
     "networkNameTips": "请填写网络名称",
@@ -76,7 +76,9 @@
     "tun_name": "tun设备名称",
     "use_smoltcp": "使用用户态协议栈",
     "virtual_ipv4": "虚拟IPv4地址",
-    "virtual_ipv4_dhcp": "启用DHCP"
+    "virtual_ipv4_dhcp": "启用DHCP",
+    "webMode": "WEB配置",
+    "fileMode": "配置文件"
   },
   "networkDetail": {
     "DNSDomain": "DNS 域名",

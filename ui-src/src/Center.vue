@@ -1,6 +1,8 @@
 <template>
   <div style="height: 0.1rem;"></div>
   <van-empty :description="t('network.api-not-found')" v-if="show" />
+  <iframe src="https://easytier.cn/web" style="min-height: 88vh;min-width: 100vw;" frameborder="no" border="0"
+                marginwidth="0" marginheight="0" scrolling="no" allowtransparency="yes"></iframe>
   <div style="height: 2.8rem;"></div>
 </template>
 
