@@ -4,7 +4,7 @@
     <van-button round type="primary" class="bottom-button" @click="startService">{{
       t('common.service_start') }}</van-button>
   </van-empty>
-  <van-field v-model="runMode" is-link readonly name="picker" :label="$t('common.run_mode')"
+  <van-field v-model="runModeName" is-link readonly name="picker" :label="$t('common.run_mode')"
     :placeholder="t('network.default_run_mode_tips')" @click="showRunModePicker = true"
     :disabled="moduleInfo.serviceState" />
   <van-popup v-model:show="showRunModePicker" destroy-on-close position="bottom">
@@ -37,7 +37,8 @@
       <van-field v-model="result" is-link readonly name="picker" :label="t('network.listenPort')" placeholder="不监听"
         :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
       <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
-        <van-picker :columns="columns2" v-model="selectedValues" @confirm="onConfirm" @cancel="showPicker2 = false" />
+        <van-picker :columns="listenOption" v-model="selectedValues" @confirm="onConfirm"
+          @cancel="showPicker2 = false" />
       </van-popup>
       <!-- <van-field name="switch" label="同时监听IPV6">
       <template #input>
@@ -148,7 +149,7 @@
         </template>
       </van-cell>
       <codemirror v-model:value="code" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
-        :extensions="extensions" @ready="handleReady" :autofocus="true" :indent-with-tab="true"/>
+        :extensions="extensions" @ready="handleReady" :autofocus="true" :indent-with-tab="true" />
     </van-cell-group>
   </div>
 
@@ -159,12 +160,12 @@
 } */
 </style>
 <script setup>
-const props=defineProps({
+const props = defineProps({
   theme: Boolean
 })
 //接收父组件传来的值
 console.info(`theme:${props.theme}`)
-import { onMounted,watch } from 'vue';
+import { onMounted, watch } from 'vue';
 import { MODDIR, ZTPATH, execCmd } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
@@ -173,7 +174,7 @@ import { StreamLanguage } from "@codemirror/language"
 import { toml } from "@codemirror/legacy-modes/mode/toml"
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView } from "@codemirror/view";
-import {Compartment,StateEffect} from "@codemirror/state"
+import { Compartment, StateEffect } from "@codemirror/state"
 
 
 const { t } = useI18n();
@@ -181,7 +182,7 @@ const moduleInfo = useModuleInfoStore();
 const checked = ref([]);
 let compartment = new Compartment()
 
-let extensions = [StreamLanguage.define(toml),oneDark];
+let extensions = [StreamLanguage.define(toml), oneDark];
 const view = shallowRef()
 const code = ref('')
 const chosenAddressId = ref('1');
@@ -206,26 +207,34 @@ function source() {
     "id": ''
   };
 }
-const runModeOption = [
-  { text: '命令行模式', value: 'command' },
-  { text: '配置文件', value: 'file' },
-  { text: 'WEB配置', value: 'web' }
-];
-const columns2 = [
-  { text: '启用监听', value: 'command' },
-  { text: '不监听', value: 'file' },
-];
-const compressionAlgorithmOption = [
-  { text: '默认', value: 'none' },
-  { text: 'zstd', value: 'zstd' },
-];
-const logLevel = [
-  { text: '关闭', value: 'off' },
-  { text: '警告', value: 'warn' },
-  { text: '信息', value: 'info' },
-  { text: '调试', value: 'debug' },
-  { text: '跟踪', value: 'trace' },
-];
+const textMap = {
+  "runModeOption": {
+    "command": '命令行',
+    "file": '配置文件',
+    "web": 'WEB配置'
+  },
+  "listenOption": {
+    "listen": '启用监听',
+    "noListen": '不监听'
+  },
+  "compressionAlgorithmOption": {
+    "none": '默认',
+    "zstd": 'zstd'
+  },
+  "logLevel": {
+    "off": '关闭',
+    "warn": '警告',
+    "info": '信息',
+    "debug": '调试',
+    "trace": '跟踪'
+  }
+
+}
+let runModeOption = [];
+let listenOption = [];
+let compressionAlgorithmOption = [];
+let logLevel = [];
+
 const selectedValues = ref(['command']);
 
 
@@ -236,22 +245,41 @@ const showCompressionAlgorithmPicker = ref(false);
 const showLogginPicker = ref(false);
 const showPicker2 = ref(false);
 const runMode = ref('');
+const runModeName = ref('');
 const compressionAlgorithm = ref('');
 const value3 = ref('');
 const loggin = ref('');
 // ======== method=========
+const fillOptions=()=>{
+  for (const key in textMap) {
+    const obj = textMap[key];
+    for (const k in obj) {
+      if (key == 'runModeOption') {
+        runModeOption.push({ text: obj[k], value: k });
+      } else if (key == 'listenOption') {
+        listenOption.push({ text: obj[k], value: k });
+      } else if (key == 'compressionAlgorithmOption') {
+        compressionAlgorithmOption.push({ text: obj[k], value: k });
+      } else if (key == 'logLevel') {
+        logLevel.push({ text: obj[k], value: k });
+      }
+    }
+  }
+}
+
 onMounted(() => {
   console.info(moduleInfo.serviceState)
+  fillOptions();
   init()
   watch(() => props.theme, (newVal, oldVal) => {
-  console.log(`theme 变化了: ${oldVal} -> ${newVal}`)
-  if(!newVal){
-    extensions = [ compartment.of(StreamLanguage.define(toml)) ,compartment.of(oneDark)];
-  }else{
-    extensions = [compartment.of(StreamLanguage.define(toml))];
-  }
-  view.value.dispatch({ effects: compartment.reconfigure(extensions) }) // reconfigure
-})
+    console.log(`theme 变化了: ${oldVal} -> ${newVal}`)
+    if (!newVal) {
+      extensions = [compartment.of(StreamLanguage.define(toml)), compartment.of(oneDark)];
+    } else {
+      extensions = [compartment.of(StreamLanguage.define(toml))];
+    }
+    view.value.dispatch({ effects: compartment.reconfigure(extensions) }) // reconfigure
+  })
 })
 const handleReady = (payload) => {
   view.value = payload.view
@@ -259,6 +287,8 @@ const handleReady = (payload) => {
 const onConfirm = ({ selectedValues }) => {
   showToast(`当前值: ${selectedValues.join(',')}`);
   runMode.value = selectedValues.join(',');
+  debugger
+  runModeName.value = textMap.runModeOption[selectedValues.join(',')];
   showRunModePicker.value = false;
 };
 const onChange = ({ selectedValues }) => {
