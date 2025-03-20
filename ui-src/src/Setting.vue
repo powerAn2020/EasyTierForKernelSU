@@ -46,7 +46,7 @@
 
 <script setup>
 // import { ref } from 'vue';
-import { MODDIR, ZTPATH, execCmd,spawnCmdWithCallback } from './tools'
+import { MODDIR, ETPATH, execCmd,spawnCmdWithCallback } from './tools'
 import { useI18n } from './locales'; // 导入所有翻译信息
 const { t } = useI18n();
 
@@ -102,12 +102,12 @@ const defaultUpdateChannel = ref('');
 //   console.info(action)
 //   if (action.value == '1') {
 //     console.info('main表优先模式')
-//     execCmd(`rm ${ZTPATH}/ROUTER_RULE_NEW`).then(v => {
+//     execCmd(`rm ${ETPATH}/ROUTER_RULE_NEW`).then(v => {
 //       console.info(v)
 //     })
 //   } else {
 //     console.info('自建路由模式')
-//     execCmd(`touch ${ZTPATH}/ROUTER_RULE_NEW`).then(v => {
+//     execCmd(`touch ${ETPATH}/ROUTER_RULE_NEW`).then(v => {
 //       console.info(v)
 //     })
 //   }
@@ -165,12 +165,12 @@ const autoStartSwitch = (newValue) => {
   autoStartLoading.value = true;
   if (newValue === true) {
     console.info('开启开机自启服务')
-    execCmd(`rm ${ZTPATH}/MANUAL`).then(v => {
+    execCmd(`rm ${ETPATH}/MANUAL`).then(v => {
       autoStartLoading.value = false;
     })
   } else {
     console.info('关闭开机自启服务')
-    execCmd(`touch ${ZTPATH}/MANUAL`).then(v => {
+    execCmd(`touch ${ETPATH}/MANUAL`).then(v => {
       autoStartLoading.value = false;
     })
   }
@@ -179,12 +179,12 @@ const uninstallKeepSwitch = (newValue) => {
   uninstallKeepLoading.value = true;
   if (newValue === true) {
     console.info('开启卸载保留数据')
-    execCmd(`touch ${ZTPATH}/KEEP_ON_UNINSTALL`).then(v => {
+    execCmd(`touch ${ETPATH}/KEEP_ON_UNINSTALL`).then(v => {
       uninstallKeepLoading.value = false;
     })
   } else {
     console.info('关闭卸载保留数据')
-    execCmd(`rm ${ZTPATH}/KEEP_ON_UNINSTALL`).then(v => {
+    execCmd(`rm ${ETPATH}/KEEP_ON_UNINSTALL`).then(v => {
       uninstallKeepLoading.value = false;
     })
   }

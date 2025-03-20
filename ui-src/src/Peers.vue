@@ -25,7 +25,7 @@
 
 <script setup>
 // import { reactive, ref } from 'vue';
-import { ZTPATH, MODDIR, execCmd } from './tools'
+import { ETPATH, MODDIR, execCmd } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import {  useI18n } from './locales'; // 导入所有翻译信息
 const { t } = useI18n();
@@ -40,7 +40,7 @@ const activeNames = ref(null);
 const items = reactive([])
 
 const startService = () => {
-  execCmd(`rm ${ZTPATH}/state/disable`).then(v => {
+  execCmd(`rm ${ETPATH}/state/disable`).then(v => {
     setTimeout(() => {
       ready.value = true;
       window.location.reload();

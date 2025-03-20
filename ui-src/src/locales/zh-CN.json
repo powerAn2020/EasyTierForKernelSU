@@ -54,11 +54,13 @@
     "disable_kcp_input": "禁用 KCP 输入",
     "disable_p2p": "禁用 P2P",
     "enable_kcp_proxy": "启用 KCP 代理",
+    "fileMode": "配置文件",
     "flags_switch": "功能开关",
     "hostName": "主机名",
     "latencyFirst": "开启低延迟优先",
     "listenIPv6": "监听IPV6",
     "listenPort": "监听端口",
+    "local_web": "启用本地web部署(实验性)",
     "maxMembers": "用户数",
     "multiThread": "使用多线程运行",
     "networkCount": "网络数",
@@ -78,7 +80,7 @@
     "virtual_ipv4": "虚拟IPv4地址",
     "virtual_ipv4_dhcp": "启用DHCP",
     "webMode": "WEB配置",
-    "fileMode": "配置文件"
+    "webServer": "服务器地址"
   },
   "networkDetail": {
     "DNSDomain": "DNS 域名",

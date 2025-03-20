@@ -1,7 +1,7 @@
 import { exec, spawn } from 'kernelsu';
 import { Buffer } from 'buffer'
 export const MODDIR = '/data/adb/modules/EasytierForKSU'
-export const ZTPATH = '/data/adb/zerotier'
+export const ETPATH = '/data/adb/easytier'
 
 export const execCmd = async (cmd) => {
   console.info(cmd)
@@ -82,4 +82,8 @@ export const isEmpty = (obj) => {
     return true;
   }
   return false;
+}
+
+export const getCorePath = () => {
+  return ETPATH+"/bin/easytier-core"
 }
