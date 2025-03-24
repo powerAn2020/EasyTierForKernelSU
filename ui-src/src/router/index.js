@@ -6,10 +6,10 @@ const routes = [
   { path: '/setting', component: () => import('../Setting.vue') },
   { path: '/peers', component: () => import('../Peers.vue') },
   {
-    path: '/center', component: () => import('../Center.vue')
+    path: '/manage', component: () => import('../Manage.vue')
     , children: [
       {
-        path: 'network',
+        path: ':param',
         component: () => import('../Network.vue')
       },
     ]

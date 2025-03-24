@@ -23,10 +23,10 @@
       <component ref="routerViewRef" :is="Component" :theme="theme" />
     </router-view>
     <div style="height: 0.1rem;padding-bottom:50px;"></div>
-    <van-tabbar route safe-area-inset-bottom>
+    <van-tabbar route safe-area-inset-bottom v-model="active">
       <van-tabbar-item replace to="/" icon="home-o">{{ t('common.dash') }}</van-tabbar-item>
       <van-tabbar-item replace to="/peers" icon="friends-o">{{ t('common.peers') }}</van-tabbar-item>
-      <van-tabbar-item replace to="/center">
+      <van-tabbar-item replace to="/manage/auth">
         <template #icon>
           <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 36 36">
             <path fill="currentColor" d="M26.58 32h-18a1 1 0 1 0 0 2h18a1 1 0 0 0 0-2"
@@ -50,13 +50,13 @@
 </template>
 
 <script setup>
-// import { ref, watch } from 'vue';
-// import { useRouter } from 'vue-router';
 import { execCmd,isEmpty } from './tools'
 import { vantLocales, useI18n, i18n } from './locales'; // 导入所有翻译信息
 const { t, locale } = useI18n();
 
 const router = useRouter()
+const route = useRoute()
+const active = ref(0);
 const theme = ref();
 const localeShow = ref(false);
 const routerViewRef = ref()
@@ -67,7 +67,6 @@ const add = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvM
 // const onClick = () => {
 //   window.location.reload();
 // }
-
 const language = [
   { name: "中文(简体)", value: "zh" },
   { name: "English(US)", value: "en" }
@@ -128,18 +127,27 @@ const switchTheme = () => {
   theme.value = !theme.value;
   localStorage.setItem('EasytierForKSU.theme', theme.value)
 };
-const newAdd = (index) => {
-  routerViewRef.value.newAdd(index);
-}
-// watch(theme, (theme, prevtheme) => {
-//   if (JSON.parse(theme)) {
-//     iconName.value = night;
-//   } else {
-//     iconName.value = light;
-//   }
-// }, {
-//   immediate: true
-// })
+/**
+ * 仅作为注释，不需要声明
+ */
+// const routeMap={
+//   '/home':0,
+//   '/peers':1,
+//   '/manage':2,
+//   '/setting':3
+// }
+
+watch(() => route.path, (newPath) => {
+  debugger
+  if(newPath.startsWith('/manage')){
+    active.value = 2
+  }
+  // 查找新路径对应的 tabbar 索引
+  // const newIndex = Object.keys(routeMap).find(key => newPath.startsWith(key));
+  // if (newIndex) {
+  //   active.value = routeMap[newIndex];
+  // }
+});
 initTheme()
 initI18n()
 </script>

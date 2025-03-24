@@ -2,7 +2,8 @@ import { defineStore } from 'pinia';
 
 export const useModuleInfoStore = defineStore('moduleInfo', {
   state: () => ({
-    serviceState: false
+    serviceState: false,
+    privateDeployment:true
   }),
   getters: {
     getServiceState(state) {
@@ -12,6 +13,9 @@ export const useModuleInfoStore = defineStore('moduleInfo', {
   actions: {
     changeServiceState(state) {
       this.serviceState = state;
+    },
+    changePrivateDeployment(state) {
+      this.privateDeployment = state;
     }
   }
 });

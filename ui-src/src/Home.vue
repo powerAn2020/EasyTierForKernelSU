@@ -14,17 +14,17 @@
   <div v-show="commandObj.runMode == 'command'">  
     <van-cell-group inset :title="t('common.base_settings')">
       <van-field v-model="commandObj.networkName" name="networkName" :label="t('network.networkName')"
-        :placeholder="t('network.networkName')" :disabled="moduleInfo.serviceState"
+        :placeholder="t('network.networkName')" :disabled="moduleInfo.serviceState" required
         :rules="[{ required: true, message: t('network.networkNameTips') }]" />
       <van-field v-model="commandObj.networkPassWd" :label="t('network.network_secret')" right-icon="warning-o" type="password"
-        :disabled="moduleInfo.serviceState" @click-right-icon="showPassword" />
+        :disabled="moduleInfo.serviceState" @click-right-icon="showPassword" required/>
       <van-field name="switch" :label="t('network.virtual_ipv4_dhcp')" input-align="right">
         <template #input>
           <van-switch v-model="commandObj.dhcpEnable" :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
       <van-field v-model="commandObj.virtual_ipv4"  :label="t('network.virtual_ipv4')" placeholder="10.0.0.1/24"
-        :rules="[{ validator: validatorMessage }]" :disabled="dhcpEnable" />
+        :rules="[{ validator: validatorMessage }]" :disabled="commandObj.dhcpEnable" />
       <van-field v-model="commandObj.peer_urls" name="" :label="t('network.peer_urls')" placeholder="tcp://public.easytier.top:11010"
         :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.serviceState" />
     </van-cell-group>
@@ -77,7 +77,7 @@
         :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
         <van-field name="switch" :label="t('network.local_web')" input-align="right">
         <template #input>
-          <van-switch v-model="commandObj.dhcpEnable" :disabled="moduleInfo.serviceState" />
+          <van-switch @change="moduleInfo.changePrivateDeployment" v-model="moduleInfo.privateDeployment" :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
     </van-cell-group>
@@ -86,12 +86,13 @@
     <van-cell-group inset :title="t('network.fileMode')">
       <van-cell center title="操作">
         <template #right-icon>
+          <van-button type="primary" size="mini" icon="replay" plain @click="router.push('/manage/config')">配置助手</van-button>
           <van-button type="primary" size="mini" icon="replay" plain @click="reload()">重载配置</van-button>
-          <van-button type="primary" size="mini" icon="plus" plain @click="update">保存配置</van-button>
+          <van-button type="primary" size="mini" icon="plus" plain @click="update()">保存配置</van-button>
         </template>
       </van-cell>
       <codemirror v-model:value="code" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
-        :extensions="extensions" @ready="handleReady" :autofocus="true" :indent-with-tab="true" />
+        :extensions="extensions" :autofocus="true" :indent-with-tab="true" />
     </van-cell-group>
   </div>
 
@@ -102,7 +103,7 @@ const props = defineProps({
 })
 //接收父组件传来的值
 console.info(`theme:${props.theme}`)
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import { MODDIR, ETPATH, execCmd, getCorePath } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
@@ -110,31 +111,27 @@ import { Codemirror } from "vue-codemirror";
 import { StreamLanguage } from "@codemirror/language"
 import { toml } from "@codemirror/legacy-modes/mode/toml"
 import { oneDark } from "@codemirror/theme-one-dark"
-import { EditorView } from "@codemirror/view";
-import { Compartment, StateEffect ,EditorState} from "@codemirror/state"
 
-
+const router = useRouter()
 const { t } = useI18n();
 const moduleInfo = useModuleInfoStore();
 const checked = ref([]);
-let compartment = new Compartment()
-const state =ref(null)
-const extensions = ref([StreamLanguage.define(toml), oneDark]);
-const view = shallowRef()
 const code = ref('')
 const chosenAddressId = ref('1');
 const listen = ref('');
 const loading = ref(false);
 const dhcpEnable = ref(false);
 const readonly = ref(false);
-const show = ref(false);
 const ready = ref(false);
 const items = reactive([]);
+const show = ref(false);
+
 const addOrUpdate = ref(source());
+
 const commandObj = ref({
   'networkName':'',
   'networkPassWd':'',
-  'dhcpEnable':false,
+  'dhcpEnable':true,
   'virtual_ipv4':'10.0.0.2/24',
   'peer_urls':'tcp://public.easytier.top:11010',
   'proxy_cidrs':'',
@@ -237,7 +234,6 @@ let logLevel = [];
 
 const selectedRunModeValues = ref(['command']);
 const selectedListenValues = ref(['false']);
-const selectedValues = ref(['command']);
 // const selectedValues = ref(['command']);
 const checkAllChange = (val) => {
       console.info(checked)
@@ -245,12 +241,10 @@ const checkAllChange = (val) => {
 }
 
 const validatorMessage = (val) => `${val} 不合法，请重新输入`;
-const showPicker = ref(false);
 const showRunModePicker = ref(false);
 const showCompressionAlgorithmPicker = ref(false);
 const showLogginPicker = ref(false);
 const showPicker2 = ref(false);
-const runMode = ref('');
 const runModeName = ref('');
 const compressionAlgorithm = ref('');
 const value3 = ref('');
@@ -274,28 +268,20 @@ const fillOptions=()=>{
     }
   }
 }
-
+const extensions = computed(() => {
+  const result = [StreamLanguage.define(toml)]
+  if (!props.theme) {
+    result.push(oneDark)
+  }
+  return result
+})
 onMounted(() => {
   console.info(moduleInfo.serviceState)
   fillOptions();
   init()
-  watch(() => props.theme, (newVal, oldVal) => {
-    console.log(`theme 变化了: ${oldVal} -> ${newVal}`)
-    if (!newVal) {
-      extensions.value = [compartment.of(StreamLanguage.define(toml)), compartment.of(oneDark)];
-    } else {
-      extensions.value = [compartment.of(StreamLanguage.define(toml))];
-    }
-    //BUG 始终不切换主题
-    view.value.dispatch({ effects: compartment.reconfigure(extensions) }) // reconfigure
-  })
 })
-const handleReady = (payload) => {
-  view.value = payload.view
-  state.value = payload.state
-}
+
 const onRunModeConfirm = ({ selectedValues }) => {
-  // runMode.value = selectedValues.join(',');
   commandObj.value.runMode = selectedValues.join(',');
   runModeName.value = textMap.runModeOption[selectedValues.join(',')];
   showRunModePicker.value = false;
@@ -340,13 +326,13 @@ const startService = () => {
     cmd+="-d"
   }
 
-  execCmd(`rm ${ETPATH}/state/disable`).then(v => {
-    setTimeout(() => {
-      showToast(t('common.operation_success'));
-      ready.value = true;
-      window.location.reload();
-    }, 50);
-  })
+  // execCmd(`rm ${ETPATH}/state/disable`).then(v => {
+  //   setTimeout(() => {
+  //     showToast(t('common.operation_success'));
+  //     ready.value = true;
+  //     window.location.reload();
+  //   }, 50);
+  // })
 }
 const startServiceConfirm = () => {
   showConfirmDialog({
