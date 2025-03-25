@@ -23,10 +23,10 @@
       <component ref="routerViewRef" :is="Component" :theme="theme" />
     </router-view>
     <div style="height: 0.1rem;padding-bottom:50px;"></div>
-    <van-tabbar route safe-area-inset-bottom v-model="active">
-      <van-tabbar-item replace to="/" icon="home-o">{{ t('common.dash') }}</van-tabbar-item>
-      <van-tabbar-item replace to="/peers" icon="friends-o">{{ t('common.peers') }}</van-tabbar-item>
-      <van-tabbar-item replace to="/manage/auth">
+    <van-tabbar @change="onChangeTabbar" safe-area-inset-bottom v-model="active">
+      <van-tabbar-item icon="home-o">{{ t('common.dash') }}</van-tabbar-item>
+      <van-tabbar-item icon="friends-o">{{ t('common.peers') }}</van-tabbar-item>
+      <van-tabbar-item>
         <template #icon>
           <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 36 36">
             <path fill="currentColor" d="M26.58 32h-18a1 1 0 1 0 0 2h18a1 1 0 0 0 0-2"
@@ -40,7 +40,7 @@
         </template>
         {{ t('common.network') }}
       </van-tabbar-item>
-      <van-tabbar-item replace to="/setting" icon="setting-o">{{ t('common.setting') }}</van-tabbar-item>
+      <van-tabbar-item replace icon="setting-o">{{ t('common.setting') }}</van-tabbar-item>
     </van-tabbar>
     <van-action-sheet v-model:show="localeShow" :actions="language" @select="switchLocale" close-on-click-action />
 
@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { execCmd,isEmpty } from './tools'
+import { execCmd, isEmpty } from './tools'
 import { vantLocales, useI18n, i18n } from './locales'; // 导入所有翻译信息
 const { t, locale } = useI18n();
 
@@ -73,7 +73,7 @@ const language = [
 ]
 // 切换语言
 const switchLocale = (language) => {
-  
+
   // Vant basic
   vantLocales(language)
   // Business component
@@ -83,6 +83,7 @@ const switchLocale = (language) => {
   localStorage.setItem('EasytierForKSU.locale', language.value)
   localeShow.value = false;
 }
+
 const initTheme = () => {
   execCmd('settings get secure ui_night_mode').then(v => {
     // 0 表示跟随系统设置?即当前模式与系统设置的主题模式相匹配.
@@ -127,27 +128,18 @@ const switchTheme = () => {
   theme.value = !theme.value;
   localStorage.setItem('EasytierForKSU.theme', theme.value)
 };
-/**
- * 仅作为注释，不需要声明
- */
-// const routeMap={
-//   '/home':0,
-//   '/peers':1,
-//   '/manage':2,
-//   '/setting':3
-// }
-
-watch(() => route.path, (newPath) => {
-  debugger
-  if(newPath.startsWith('/manage')){
-    active.value = 2
+const onChangeTabbar = (index) => {
+  console.log(router)
+  if (index === 0) {
+    router.push({ path: "/" })
+  } else if (index === 1) {
+    router.push({ path: "/peers" })
+  } else if (index === 2) {
+    router.push({ path: "/manage/auth" })
+  } else if (index === 3) {
+    router.push({ path: "/setting" })
   }
-  // 查找新路径对应的 tabbar 索引
-  // const newIndex = Object.keys(routeMap).find(key => newPath.startsWith(key));
-  // if (newIndex) {
-  //   active.value = routeMap[newIndex];
-  // }
-});
+}
 initTheme()
 initI18n()
 </script>

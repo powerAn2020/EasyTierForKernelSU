@@ -1,14 +1,14 @@
 <template>
   <div style="height: 0.1rem;"></div>
-  <van-empty :description="t('network.api-not-found')" v-if="show" />
+  <van-nav-bar :left-text="t('common.back')" title="Zerotier For KSU" left-arrow @click-left="onClickLeft"
+    safe-area-inset-top fixed  v-if="show"/>
+  <!-- <van-empty :description="t('network.api-not-found')" v-if="show" /> -->
   <iframe :src="url" style="min-height: 82vh;min-width: 95vw;" frameborder="no" border="0"
       marginwidth="1" marginheight="1" scrolling="yes" allowtransparency="yes"></iframe>
   <div style="height: 2.8rem;"></div>
 </template>
 
 <script setup>
-// import { ref } from 'vue';
-// import { useRoute, useRouter } from 'vue-router'
 import { MODDIR, execCmdWithCallback, execCmdWithErrno } from './tools'
 import { useI18n } from './locales'; // 导入所有翻译信息
 import { useModuleInfoStore } from './stores/status'
@@ -35,8 +35,10 @@ const init = () => {
   }
   if(route.params.param == 'config'){
     urlStart+="/config_generator"
+    show.value=true;
   }else{
     urlStart+="auth"
+    show.value=false;
   }
   url.value = urlStart;
   // execCmdWithErrno(`sh ${MODDIR}/api.sh apiToken show`).then(v => {
@@ -50,25 +52,8 @@ const init = () => {
   // })
 
 }
-init()
-const newAdd = (index) => {
-  showConfirmDialog({
-    message:
-      t('network.ask_new_network'),
-  }).then(() => {
-    setTimeout(() => {
-      execCmdWithCallback({
-        cmd: `sh ${MODDIR}/api.sh central network add`, onSuccess: (data) => {
-          showToast(t('network.operation_success'));
-          window.location.reload();
-        }, onError: (data) => {
-          showToast(t('network.operation_fail') + data);
-        }
-      })
-    }, 50);
-  }).catch(() => {
-    resolve(true);
-  })
+const onClickLeft=()=>{
+  router.push('/')
 }
-defineExpose({ newAdd });
+init()
 </script>

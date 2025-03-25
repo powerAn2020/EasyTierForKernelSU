@@ -11,33 +11,35 @@
     <van-picker :columns="runModeOption" v-model="selectedRunModeValues" @confirm="onRunModeConfirm"
       @cancel="showRunModePicker = false" />
   </van-popup>
-  <div v-show="commandObj.runMode == 'command'">  
+  <div v-show="commandObj.runMode == 'command'">
     <van-cell-group inset :title="t('common.base_settings')">
       <van-field v-model="commandObj.networkName" name="networkName" :label="t('network.networkName')"
         :placeholder="t('network.networkName')" :disabled="moduleInfo.serviceState" required
         :rules="[{ required: true, message: t('network.networkNameTips') }]" />
-      <van-field v-model="commandObj.networkPassWd" :label="t('network.network_secret')" right-icon="warning-o" type="password"
-        :disabled="moduleInfo.serviceState" @click-right-icon="showPassword" required/>
+      <van-field v-model="commandObj.networkPassWd" :label="t('network.network_secret')" right-icon="warning-o"
+        type="password" :disabled="moduleInfo.serviceState" @click-right-icon="showPassword" required />
       <van-field name="switch" :label="t('network.virtual_ipv4_dhcp')" input-align="right">
         <template #input>
           <van-switch v-model="commandObj.dhcpEnable" :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
-      <van-field v-model="commandObj.virtual_ipv4"  :label="t('network.virtual_ipv4')" placeholder="10.0.0.1/24"
+      <van-field v-model="commandObj.virtual_ipv4" :label="t('network.virtual_ipv4')" placeholder="10.0.0.1/24"
         :rules="[{ validator: validatorMessage }]" :disabled="commandObj.dhcpEnable" />
-      <van-field v-model="commandObj.peer_urls" name="" :label="t('network.peer_urls')" placeholder="tcp://public.easytier.top:11010"
-        :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.serviceState" />
+      <van-field v-model="commandObj.peer_urls" name="" :label="t('network.peer_urls')"
+        placeholder="tcp://public.easytier.top:11010" :rules="[{ validator: validatorMessage }]"
+        :disabled="moduleInfo.serviceState" />
     </van-cell-group>
     <van-cell-group inset :title="t('common.advanced_settings')">
-      <van-field v-model="commandObj.proxy_cidrs" :label="t('network.proxy_cidrs')" name="proxy_cidrs" placeholder="192.168.0.0/24"
-        :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
+      <van-field v-model="commandObj.proxy_cidrs" :label="t('network.proxy_cidrs')" name="proxy_cidrs"
+        placeholder="192.168.0.0/24" :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
       <van-field v-model="listen" is-link readonly name="picker" :label="t('network.listenPort')" placeholder="不监听"
         :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
       <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
         <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
           @cancel="showPicker2 = false" />
       </van-popup>
-      <van-field v-model="commandObj.hostName" name="hostName" :label="t('network.hostName')" :placeholder="t('network.hostName')" />
+      <van-field v-model="commandObj.hostName" name="hostName" :label="t('network.hostName')"
+        :placeholder="t('network.hostName')" />
       <van-field name="checkboxGroup" :label="t('network.flags_switch')" :disabled="moduleInfo.serviceState">
         <template #input>
           <van-checkbox-group v-model="checked" direction="horizontal" shape="square" @change="checkAllChange">
@@ -47,7 +49,7 @@
                   <van-cell :title="item.title" :label="item.label">
                   </van-cell>
                 </template>
-                </van-checkbox>
+              </van-checkbox>
             </van-space>
           </van-checkbox-group>
         </template>
@@ -56,8 +58,8 @@
         :label="t('network.compressionAlgorithm')" :placeholder="t('common.default')"
         @click="showCompressionAlgorithmPicker = true" />
       <van-popup v-model:show="showCompressionAlgorithmPicker" destroy-on-close position="bottom">
-        <van-picker :columns="compressionAlgorithmOption" v-model="selectedCompressionAlgorithmValues" @confirm="onCompressionAlgorithmConfirm"
-          @cancel="showCompressionAlgorithmPicker = false" />
+        <van-picker :columns="compressionAlgorithmOption" v-model="selectedCompressionAlgorithmValues"
+          @confirm="onCompressionAlgorithmConfirm" @cancel="showCompressionAlgorithmPicker = false" />
       </van-popup>
 
       <van-field v-model="loggin" is-link readonly name="picker" :label="t('common.logging')"
@@ -73,11 +75,12 @@
   </div>
   <div v-show="commandObj.runMode == 'web'">
     <van-cell-group inset :title="t('network.webMode')">
-      <van-field v-model="value3" :label="t('network.webServer')" placeholder=""
-        :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
-        <van-field name="switch" :label="t('network.local_web')" input-align="right">
+      <van-field v-model="value3" :label="t('network.webServer')" placeholder="" :disabled="moduleInfo.serviceState"
+        :rules="[{ validator: validatorMessage }]" />
+      <van-field name="switch" :label="t('network.local_web')" input-align="right">
         <template #input>
-          <van-switch @change="moduleInfo.changePrivateDeployment" v-model="moduleInfo.privateDeployment" :disabled="moduleInfo.serviceState" />
+          <van-switch @change="moduleInfo.changePrivateDeployment" v-model="moduleInfo.privateDeployment"
+            :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
     </van-cell-group>
@@ -86,7 +89,8 @@
     <van-cell-group inset :title="t('network.fileMode')">
       <van-cell center title="操作">
         <template #right-icon>
-          <van-button type="primary" size="mini" icon="replay" plain @click="router.push('/manage/config')">配置助手</van-button>
+          <van-button type="primary" size="mini" icon="replay" plain
+            @click="router.push('/manage/config')">配置助手</van-button>
           <van-button type="primary" size="mini" icon="replay" plain @click="reload()">重载配置</van-button>
           <van-button type="primary" size="mini" icon="plus" plain @click="update()">保存配置</van-button>
         </template>
@@ -126,32 +130,22 @@ const ready = ref(false);
 const items = reactive([]);
 const show = ref(false);
 
-const addOrUpdate = ref(source());
 
 const commandObj = ref({
-  'networkName':'',
-  'networkPassWd':'',
-  'dhcpEnable':true,
-  'virtual_ipv4':'10.0.0.2/24',
-  'peer_urls':'tcp://public.easytier.top:11010',
-  'proxy_cidrs':'',
-  'listen':false,
-  'hostName':'easytierForKSU',
-  'compressionAlgorithm':'none',
-  'logLevel':'off',
-  'rpcPort':15888,
-  'tunName':''
+  'networkName': '',
+  'networkPassWd': '',
+  'dhcpEnable': true,
+  'virtual_ipv4': '10.0.0.2/24',
+  'peer_urls': 'tcp://public.easytier.top:11010',
+  'proxy_cidrs': '',
+  'listen': false,
+  'hostName': 'easytierForKSU',
+  'compressionAlgorithm': 'none',
+  'logLevel': 'off',
+  'rpcPort': 15888,
+  'tunName': '',
+  'advance': []
 });
-function source() {
-  return {
-    "allowDNS": false,
-    "allowDefault": false,
-    "allowManaged": true,
-    "allowGlobal": false,
-    "name": '',
-    "id": ''
-  };
-}
 const textMap = {
   "runModeOption": {
     "command": '命令行',
@@ -236,8 +230,9 @@ const selectedRunModeValues = ref(['command']);
 const selectedListenValues = ref(['false']);
 // const selectedValues = ref(['command']);
 const checkAllChange = (val) => {
-      console.info(checked)
-      console.info(val)
+  console.info(checked)
+  console.info(val)
+  commandObj.value.advance = checked.value;
 }
 
 const validatorMessage = (val) => `${val} 不合法，请重新输入`;
@@ -249,10 +244,10 @@ const runModeName = ref('');
 const compressionAlgorithm = ref('');
 const value3 = ref('');
 const loggin = ref('');
-const commandArgs=ref([]);
+const commandArgs = ref([]);
 
 // ======== method=========
-const fillOptions=()=>{
+const fillOptions = () => {
   for (const key in textMap) {
     const obj = textMap[key];
     for (const k in obj) {
@@ -285,6 +280,7 @@ const onRunModeConfirm = ({ selectedValues }) => {
   commandObj.value.runMode = selectedValues.join(',');
   runModeName.value = textMap.runModeOption[selectedValues.join(',')];
   showRunModePicker.value = false;
+  moduleInfo.runMode = selectedValues.join(',');
 };
 const onListenConfirm = ({ selectedValues }) => {
   commandObj.value.listen = selectedValues.join(',');
@@ -301,38 +297,28 @@ const onCompressionAlgorithmConfirm = ({ selectedValues }) => {
   compressionAlgorithm.value = textMap.compressionAlgorithmOption[selectedValues.join(',')];
   showCompressionAlgorithmPicker.value = false;
 };
-const onChange = ({ selectedValues }) => {
-  showToast(`: ${selectedValues.join(',')}`);
-};
-const onCancel = () => showToast('取消');
 
-const reset = () => {
-  addOrUpdate.value = source()
-  info = addOrUpdate.value;
-}
-let info = addOrUpdate.value // Js里操作只操作 info 就可以不用 infoRef.value 了
-const onRefresh = () => {
-  getList();
-  setTimeout(() => {
-    loading.value = false;
-  }, 50);
-};
+
 const startService = () => {
-  
-  // 核心代码
-  let cmd=`${getCorePath()} --network-name ${commandObj.networkName} --network-secret ${commandObj.networkPassWd} `
-  // DHCP服务
-  if(dhcpEnable.value==true){
-    cmd+="-d"
-  }
+  debugger
 
-  // execCmd(`rm ${ETPATH}/state/disable`).then(v => {
-  //   setTimeout(() => {
-  //     showToast(t('common.operation_success'));
-  //     ready.value = true;
-  //     window.location.reload();
-  //   }, 50);
-  // })
+  switch (commandObj.value.runMode) {
+    case "command":
+      // 核心代码
+      let cmd = `${getCorePath()} --network-name ${commandObj.value.networkName} --network-secret ${commandObj.value.networkPassWd} `
+      // DHCP服务
+      if (dhcpEnable.value == true) {
+        cmd += "-d"
+      }
+      break;
+    case "file":
+      break;
+    case "web":
+      break;
+    default:
+
+      break;
+  }
 }
 const startServiceConfirm = () => {
   showConfirmDialog({
@@ -343,48 +329,6 @@ const startServiceConfirm = () => {
     })
     .catch(() => resolve(true));
 
-}
-//新增或修改
-const newAdd = (index) => {
-  if (!moduleInfo.getServiceState()) {
-    startServiceConfirm()
-    return;
-  }
-  show.value = true;
-  if (typeof (index) !== 'undefined') {
-    //修改回显
-    readonly.value = true;
-    const editObj = JSON.parse(JSON.stringify(items[index]));
-    info.allowDNS = editObj.allowDNS,
-      info.allowDefault = editObj.allowDefault,
-      info.allowManaged = editObj.allowManaged,
-      info.allowGlobal = editObj.allowGlobal,
-      info.name = editObj.name,
-      info.id = editObj.id
-  } else {
-    readonly.value = false;
-    reset()
-  }
-  chosenAddressId.value = index;
-}
-const changeStatus = (index) => {
-  if (!moduleInfo.getServiceState()) {
-    startServiceConfirm()
-    return;
-  }
-  let status = items[index];
-  //点击禁用
-  if (typeof (status.enable) == 'undefined' || status.enable === 'true') {
-    status.enable = 'false';
-    leaveApi(status)
-  } else {
-    status.enable = 'true';
-    //点击启用
-    joinApi(status)
-    let leaveNetwork = JSON.parse(localStorage.getItem('EasytierForKSU.leaveNetwork'));
-    const nleaveNetwork = leaveNetwork.filter(item => item.id !== status.id)
-    localStorage.setItem("EasytierForKSU.leaveNetwork", JSON.stringify(nleaveNetwork));
-  }
 }
 const getList = () => {
   if (!moduleInfo.getServiceState()) {
