@@ -78,12 +78,33 @@ export const saveFile = (content, filePath) => {
   * @returns 
   */
 export const isEmpty = (obj) => {
-  if(typeof(obj) == "undefined" || obj == null || obj == "null" || obj.length == 0){
+  if (typeof (obj) == "undefined" || obj == null || obj == "null" || obj.length == 0) {
     return true;
   }
   return false;
 }
 
 export const getCorePath = () => {
-  return ETPATH+"/bin/easytier-core"
+  return ETPATH + "/bin/easytier-core"
+}
+/**
+ * 校验IP/子网格式 
+ * "192.168.10.0/24","192.168.10.0" 有效
+ * "256.168.10.0/24",  // 无效 IP
+ * "192.168.10.0/33",  // 无效子网掩码
+ * @param {string} ipSubnet 
+ * @returns 通过true，失败false
+ */
+export const isValidIpv4Subnet = (ipSubnet) => {
+  const pattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\/(3[0-2]|[1-2]?[0-9]))?$/;
+  return pattern.test(ipSubnet);
+}
+/**
+ * 校验端口号
+ * @param {string} port 
+ * @returns 
+ */
+export const isValidPort = (port) => {
+  const pattern = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
+  return pattern.test(port);
 }

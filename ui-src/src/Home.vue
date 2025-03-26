@@ -4,7 +4,7 @@
     <van-button round type="primary" class="bottom-button" @click="startService">{{
       t('common.service_start') }}</van-button>
   </van-empty>
-  <van-field v-model="runModeName" is-link readonly name="picker" :label="$t('common.run_mode')"
+  <van-field v-model="runModeName" is-link readonly :label="$t('common.run_mode')"
     :placeholder="t('network.default_run_mode_tips')" @click="showRunModePicker = true"
     :disabled="moduleInfo.serviceState" />
   <van-popup v-model:show="showRunModePicker" destroy-on-close position="bottom">
@@ -13,32 +13,35 @@
   </van-popup>
   <div v-show="commandObj.runMode == 'command'">
     <van-cell-group inset :title="t('common.base_settings')">
-      <van-field v-model="commandObj.networkName" name="networkName" :label="t('network.networkName')"
+      <van-field v-model="commandObj.networkName"  :label="t('network.networkName')"
         :placeholder="t('network.networkName')" :disabled="moduleInfo.serviceState" required
         :rules="[{ required: true, message: t('network.networkNameTips') }]" />
-      <van-field v-model="commandObj.networkPassWd" :label="t('network.network_secret')" right-icon="warning-o"
-        type="password" :disabled="moduleInfo.serviceState" @click-right-icon="showPassword" required />
-      <van-field name="switch" :label="t('network.virtual_ipv4_dhcp')" input-align="right">
+      <van-field v-model="commandObj.networkPassWd" :label="t('network.network_secret')" 
+        :disabled="moduleInfo.serviceState"  required />
+      <van-field :label="t('network.virtual_ipv4_dhcp')" input-align="right">
         <template #input>
           <van-switch v-model="commandObj.dhcpEnable" :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
       <van-field v-model="commandObj.virtual_ipv4" :label="t('network.virtual_ipv4')" placeholder="10.0.0.1/24"
         :rules="[{ validator: validatorMessage }]" :disabled="commandObj.dhcpEnable" />
-      <van-field v-model="commandObj.peer_urls" name="" :label="t('network.peer_urls')"
-        placeholder="tcp://public.easytier.top:11010" :rules="[{ validator: validatorMessage }]"
+      <van-field v-model="commandObj.peer_urls" :label="t('network.peer_urls')"
+        placeholder="初始连接的对等节点, -p 参数" :rules="[{ validator: validatorMessage }]"
         :disabled="moduleInfo.serviceState" />
     </van-cell-group>
     <van-cell-group inset :title="t('common.advanced_settings')">
-      <van-field v-model="commandObj.proxy_cidrs" :label="t('network.proxy_cidrs')" name="proxy_cidrs"
+      <van-field v-model="commandObj.external_node"  :label="t('network.external_node')"
+        placeholder="使用公共共享节点来发现对等节点, -e 参数" :rules="[{ validator: validatorMessage }]"
+        :disabled="moduleInfo.serviceState" />
+      <van-field v-model="commandObj.proxy_cidrs" :label="t('network.proxy_cidrs')" 
         placeholder="192.168.0.0/24" :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
-      <van-field v-model="listen" is-link readonly name="picker" :label="t('network.listenPort')" placeholder="不监听"
+      <van-field v-model="listen" is-link readonly  :label="t('network.listenPort')" placeholder="不监听"
         :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
       <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
         <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
           @cancel="showPicker2 = false" />
       </van-popup>
-      <van-field v-model="commandObj.hostName" name="hostName" :label="t('network.hostName')"
+      <van-field v-model="commandObj.hostName"  :label="t('network.hostName')"
         :placeholder="t('network.hostName')" />
       <van-field name="checkboxGroup" :label="t('network.flags_switch')" :disabled="moduleInfo.serviceState">
         <template #input>
@@ -54,7 +57,7 @@
           </van-checkbox-group>
         </template>
       </van-field>
-      <van-field v-model="compressionAlgorithm" is-link readonly name="picker"
+      <van-field v-model="compressionAlgorithm" is-link readonly 
         :label="t('network.compressionAlgorithm')" :placeholder="t('common.default')"
         @click="showCompressionAlgorithmPicker = true" />
       <van-popup v-model:show="showCompressionAlgorithmPicker" destroy-on-close position="bottom">
@@ -62,22 +65,22 @@
           @confirm="onCompressionAlgorithmConfirm" @cancel="showCompressionAlgorithmPicker = false" />
       </van-popup>
 
-      <van-field v-model="loggin" is-link readonly name="picker" :label="t('common.logging')"
+      <van-field v-model="loggin" is-link readonly :label="t('common.logging')"
         :placeholder="t('common.close')" @click="showLogginPicker = true" />
       <van-popup v-model:show="showLogginPicker" destroy-on-close position="bottom">
         <van-picker :columns="logLevel" v-model="selectedLogginValues" @confirm="onLogginConfirm"
           @cancel="showLogginPicker = false" />
       </van-popup>
-      <van-field v-model="commandObj.rpcPort" name="rpcPort" :label="t('network.rpc_port')" placeholder="15888"
+      <van-field v-model="commandObj.rpcPort" :label="t('network.rpc_port')" placeholder="15888"
         :rules="[{ validator: validatorMessage }]" />
-      <van-field v-model="commandObj.tunName" name="tunName" :label="t('network.tun_name')" placeholder="留空自动生成" />
+      <van-field v-model="commandObj.tunName" :label="t('network.tun_name')" placeholder="留空自动生成" />
     </van-cell-group>
   </div>
   <div v-show="commandObj.runMode == 'web'">
     <van-cell-group inset :title="t('network.webMode')">
-      <van-field v-model="value3" :label="t('network.webServer')" placeholder="" :disabled="moduleInfo.serviceState"
+      <van-field v-model="commandObj.webServer" :label="t('network.webServer')" placeholder="" :disabled="moduleInfo.serviceState"
         :rules="[{ validator: validatorMessage }]" />
-      <van-field name="switch" :label="t('network.local_web')" input-align="right">
+      <van-field :label="t('network.local_web')" input-align="right">
         <template #input>
           <van-switch @change="moduleInfo.changePrivateDeployment" v-model="moduleInfo.privateDeployment"
             :disabled="moduleInfo.serviceState" />
@@ -95,7 +98,7 @@
           <van-button type="primary" size="mini" icon="plus" plain @click="update()">保存配置</van-button>
         </template>
       </van-cell>
-      <codemirror v-model:value="code" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
+      <codemirror v-model:value="commandObj.conf" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
         :extensions="extensions" :autofocus="true" :indent-with-tab="true" />
     </van-cell-group>
   </div>
@@ -108,7 +111,7 @@ const props = defineProps({
 //接收父组件传来的值
 console.info(`theme:${props.theme}`)
 import { onMounted, ref, computed } from 'vue';
-import { MODDIR, ETPATH, execCmd, getCorePath } from './tools'
+import { MODDIR, ETPATH, execCmd, getCorePath, isValidIpv4Subnet,isValidPort } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
 import { Codemirror } from "vue-codemirror";
@@ -120,7 +123,6 @@ const router = useRouter()
 const { t } = useI18n();
 const moduleInfo = useModuleInfoStore();
 const checked = ref([]);
-const code = ref('')
 const chosenAddressId = ref('1');
 const listen = ref('');
 const loading = ref(false);
@@ -132,11 +134,13 @@ const show = ref(false);
 
 
 const commandObj = ref({
+  'runMode': 'command',
   'networkName': '',
   'networkPassWd': '',
   'dhcpEnable': true,
   'virtual_ipv4': '10.0.0.2/24',
   'peer_urls': 'tcp://public.easytier.top:11010',
+  'external_node':'',
   'proxy_cidrs': '',
   'listen': false,
   'hostName': 'easytierForKSU',
@@ -144,8 +148,12 @@ const commandObj = ref({
   'logLevel': 'off',
   'rpcPort': 15888,
   'tunName': '',
-  'advance': []
+  'advance': [],
+  'conf':'',
+  'webServer': '',
+  'privateDeployment': false
 });
+
 const textMap = {
   "runModeOption": {
     "command": '命令行',
@@ -228,12 +236,6 @@ let logLevel = [];
 
 const selectedRunModeValues = ref(['command']);
 const selectedListenValues = ref(['false']);
-// const selectedValues = ref(['command']);
-const checkAllChange = (val) => {
-  console.info(checked)
-  console.info(val)
-  commandObj.value.advance = checked.value;
-}
 
 const validatorMessage = (val) => `${val} 不合法，请重新输入`;
 const showRunModePicker = ref(false);
@@ -242,11 +244,15 @@ const showLogginPicker = ref(false);
 const showPicker2 = ref(false);
 const runModeName = ref('');
 const compressionAlgorithm = ref('');
-const value3 = ref('');
 const loggin = ref('');
 const commandArgs = ref([]);
 
 // ======== method=========
+const checkAllChange = (val) => {
+  console.info(checked)
+  console.info(val)
+  commandObj.value.advance = checked.value;
+}
 const fillOptions = () => {
   for (const key in textMap) {
     const obj = textMap[key];
@@ -297,14 +303,40 @@ const onCompressionAlgorithmConfirm = ({ selectedValues }) => {
   compressionAlgorithm.value = textMap.compressionAlgorithmOption[selectedValues.join(',')];
   showCompressionAlgorithmPicker.value = false;
 };
+/**
+ * 检查已填报的内容
+ */
+const checkContent = (runMode) => {
+  if(runMode==='command'){
+    if (!isValidIpv4Subnet(commandObj.value.virtual_ipv4)) {
+      showNotify({
+        type: 'danger',
+        message: t('network.virtual_ipv4_error')
+      });
+      return;
+    }
+    if (!isValidIpv4Subnet(commandObj.value.proxy_cidrs)) {
+      showNotify({
+        type: 'danger',
+        message: t('network.proxy_cidrs_error')
+      });
+      return;
+    }
+    if(!isValidPort(commandObj.value.rpcPort)){
+      showNotify({
+        type: 'danger',
+        message: t('network.rpcPort_error')
+      });
+      return;
+    }
+  }
 
-
+};// 启动服务
 const startService = () => {
-  debugger
-
   switch (commandObj.value.runMode) {
     case "command":
       // 核心代码
+      checkContent(commandObj.value.runMode)
       let cmd = `${getCorePath()} --network-name ${commandObj.value.networkName} --network-secret ${commandObj.value.networkPassWd} `
       // DHCP服务
       if (dhcpEnable.value == true) {
@@ -312,8 +344,10 @@ const startService = () => {
       }
       break;
     case "file":
+    checkContent(commandObj.value.runMode)
       break;
     case "web":
+    checkContent(commandObj.value.runMode)
       break;
     default:
 

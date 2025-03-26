@@ -70,7 +70,8 @@
     "no_tun": "无 TUN 模式",
     "operation_fail": "操作失败",
     "operation_success": "操作完成",
-    "peer_urls": "对等网络",
+    "peer_urls": "对等节点",
+    "external_node": "共享节点地址",
     "proxy_cidrs": "子网代理",
     "routeCount": "路由数",
     "rpc_port": "RPC门户端口",
@@ -80,7 +81,10 @@
     "virtual_ipv4": "虚拟IPv4地址",
     "virtual_ipv4_dhcp": "启用DHCP",
     "webMode": "WEB配置",
-    "webServer": "服务器地址"
+    "webServer": "服务器地址",
+    "virtual_ipv4_error": "虚拟IPv4地址错误",
+    "proxy_cidrs_error": "子网代理地址错误",
+    "rpcPort_error": "RPC端口错误"
   },
   "networkDetail": {
     "DNSDomain": "DNS 域名",
