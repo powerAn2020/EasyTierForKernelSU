@@ -73,15 +73,12 @@ export const saveFile = (content, filePath) => {
 }
 
 /**
-  * 判断字符串是否为空
+  * 判断字符串是否为空 ,为空true，非空false
   * @param obj 
   * @returns 
   */
 export const isEmpty = (obj) => {
-  if (typeof (obj) == "undefined" || obj == null || obj == "null" || obj.length == 0) {
-    return true;
-  }
-  return false;
+  return typeof (obj) == "undefined" || obj == null || obj == "null" || obj.length == 0
 }
 
 export const getCorePath = () => {
@@ -96,6 +93,9 @@ export const getCorePath = () => {
  * @returns 通过true，失败false
  */
 export const isValidIpv4Subnet = (ipSubnet) => {
+  if(!ipSubnet){
+    return false;
+  }
   const pattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\/(3[0-2]|[1-2]?[0-9]))?$/;
   return pattern.test(ipSubnet);
 }
@@ -105,6 +105,10 @@ export const isValidIpv4Subnet = (ipSubnet) => {
  * @returns 
  */
 export const isValidPort = (port) => {
+  if(!port){
+    return false;
+  }
   const pattern = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
   return pattern.test(port);
 }
+export const logDir = ETPATH + '/log'
