@@ -1,8 +1,10 @@
 <template>
   <!-- 主体列表 -->
-  <van-empty image="network" :description="moduleInfo.serviceState?t('common.service_running'):t('common.service_no_run')">
-    <van-button round type="primary" class="bottom-button" @click="startService" :color="moduleInfo.serviceState?'linear-gradient(to right, #ff6034, #ee0a24)':'#1989FA'">
-      {{!moduleInfo.serviceState?t('common.service_start'):t('common.service_stop') }}</van-button>
+  <van-empty image="network"
+    :description="moduleInfo.serviceState ? t('common.service_running') : t('common.service_no_run')">
+    <van-button round type="primary" class="bottom-button" @click="startService"
+      :color="moduleInfo.serviceState ? 'linear-gradient(to right, #ff6034, #ee0a24)' : '#1989FA'">
+      {{ !moduleInfo.serviceState ? t('common.service_start') : t('common.service_stop') }}</van-button>
   </van-empty>
   <van-field v-model="runModeName" is-link readonly :label="$t('common.run_mode')"
     :placeholder="t('network.default_run_mode_tips')" @click="showRunModePicker = true"
@@ -27,72 +29,8 @@
       <van-field v-model="commandObj.peer_urls" :label="t('network.peer_urls')" placeholder="初始连接的对等节点, -p 参数"
         :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.serviceState" />
     </van-cell-group>
-    <van-cell-group inset :title="t('common.advanced_settings')">
-      <van-field v-model="commandObj.external_node" :label="t('network.external_node')"
-        placeholder="使用公共共享节点来发现对等节点, -e 参数" :rules="[{ validator: validatorMessage }]"
-        :disabled="moduleInfo.serviceState" />
-      <van-field v-model="commandObj.hostName" :label="t('network.hostName')" :placeholder="t('network.hostName')" :disabled="moduleInfo.serviceState"/>
-
-      <van-collapse v-model="activeNames">
-        <van-collapse-item :title="t('network.proxy_cidrs')" name="1">
-          <template #value>
-            <van-tag plain type="primary" v-for="(route2, ridx2) in commandObj.proxy_cidrs" :key="ridx2">
-              {{ route2 }}
-            </van-tag>
-            <van-tag plain type="primary" v-show="commandObj.proxy_cidrs.length === 0">
-              {{ t('network.addSubRouteTips') }}
-            </van-tag>
-
-          </template>
-          <van-cell title="" center>
-            <template #value>
-              <van-button type="success" size="small" @click="commandObj.proxy_cidrs.push('')" :disabled="moduleInfo.serviceState">
-                {{ t('networkDetail.addRouteRule') }}
-              </van-button>
-            </template>
-          </van-cell>
-          <van-field v-for="(route, ridx) in commandObj.proxy_cidrs" :key="ridx" v-model="commandObj.proxy_cidrs[ridx]"
-            clearable placeholder="192.168.0.0/23"><template #button>
-              <van-icon name="delete-o" color="#1989fa" size="1.2rem" @click="commandObj.proxy_cidrs.splice(ridx, 1)" />
-            </template></van-field>
-        </van-collapse-item>
-        <van-collapse-item :title="t('network.flags_switch')" name="2">
-          <van-checkbox-group v-model="checked" direction="horizontal" shape="square" @change="checkAllChange">
-            <van-space direction="vertical" fill>
-              <van-checkbox :disabled="moduleInfo.serviceState" label-position="left" :name="item.name" v-for="(item, index) in textMap.advanced" :key="index">
-                <template #default>
-                  <van-cell :title="item.title" :label="item.label">
-                  </van-cell>
-                </template>
-              </van-checkbox>
-            </van-space>
-          </van-checkbox-group>
-        </van-collapse-item>
-      </van-collapse>
-
-      <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
-        <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
-          @cancel="showPicker2 = false" />
-      </van-popup>
-      <van-field v-model="compressionAlgorithm" is-link readonly :label="t('network.compressionAlgorithm')" :disabled="moduleInfo.serviceState"
-        :placeholder="t('common.default')" @click="showCompressionAlgorithmPicker = true" />
-      <van-popup v-model:show="showCompressionAlgorithmPicker" destroy-on-close position="bottom">
-        <van-picker :columns="compressionAlgorithmOption" v-model="selectedCompressionAlgorithmValues"
-          @confirm="onCompressionAlgorithmConfirm" @cancel="showCompressionAlgorithmPicker = false" />
-      </van-popup>
-
-      <van-field v-model="loggin" is-link readonly :label="t('common.logging')" :placeholder="t('common.close')" :disabled="moduleInfo.serviceState"
-        @click="showLogginPicker = true" />
-      <van-popup v-model:show="showLogginPicker" destroy-on-close position="bottom">
-        <van-picker :columns="logLevel" v-model="selectedLogginValues" @confirm="onLogginConfirm"
-          @cancel="showLogginPicker = false" />
-      </van-popup>
-      <van-field v-model="commandObj.rpcPort" :label="t('network.rpc_port')" placeholder="15888" type="digit" :disabled="moduleInfo.serviceState"/>
-      <van-field v-model="commandObj.tunName" :label="t('network.tun_name')" placeholder="留空自动生成" :disabled="moduleInfo.serviceState"/>
-      <van-field v-model="listen" is-link readonly :label="t('network.listenPort')" placeholder="不监听"
-        :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
-    </van-cell-group>
   </div>
+
   <div v-show="commandObj.runMode == 'web'">
     <van-cell-group inset :title="t('network.webMode')">
       <van-field v-model="commandObj.webServer" :label="t('network.webServer')" placeholder=""
@@ -119,7 +57,95 @@
         :extensions="extensions" :autofocus="true" :indent-with-tab="true" :disabled="moduleInfo.serviceState" />
     </van-cell-group>
   </div>
+  <van-cell-group inset :title="t('common.advanced_settings')">
+    <div v-show="commandObj.runMode == 'command'">
+      <van-field v-model="commandObj.external_node" :label="t('network.external_node')"
+        placeholder="使用公共共享节点来发现对等节点, -e 参数" :rules="[{ validator: validatorMessage }]"
+        :disabled="moduleInfo.serviceState" />
+      <van-field v-model="commandObj.hostName" :label="t('network.hostName')" :placeholder="t('network.hostName')"
+        :disabled="moduleInfo.serviceState" />
 
+      <van-collapse v-model="activeNames">
+        <van-collapse-item :title="t('network.proxy_cidrs')" name="1">
+          <template #value>
+            <van-tag plain type="primary" v-for="(route2, ridx2) in commandObj.proxy_cidrs" :key="ridx2">
+              {{ route2 }}
+            </van-tag>
+            <van-tag plain type="primary" v-show="commandObj.proxy_cidrs.length === 0">
+              {{ t('network.addSubRouteTips') }}
+            </van-tag>
+
+          </template>
+          <van-cell title="" center>
+            <template #value>
+              <van-button type="success" size="small" @click="commandObj.proxy_cidrs.push('')"
+                :disabled="moduleInfo.serviceState">
+                {{ t('networkDetail.addRouteRule') }}
+              </van-button>
+            </template>
+          </van-cell>
+          <van-field v-for="(route, ridx) in commandObj.proxy_cidrs" :key="ridx" v-model="commandObj.proxy_cidrs[ridx]"
+            clearable placeholder="192.168.0.0/23"><template #button>
+              <van-icon name="delete-o" color="#1989fa" size="1.2rem" @click="commandObj.proxy_cidrs.splice(ridx, 1)" />
+            </template></van-field>
+        </van-collapse-item>
+        <van-collapse-item :title="t('network.flags_switch')" name="2">
+          <van-checkbox-group v-model="checked" direction="horizontal" shape="square" @change="checkAllChange">
+            <van-space direction="vertical" fill>
+              <van-checkbox :disabled="moduleInfo.serviceState" label-position="left" :name="item.name"
+                v-for="(item, index) in textMap.advanced" :key="index">
+                <template #default>
+                  <van-cell :title="item.title" :label="item.label">
+                  </van-cell>
+                </template>
+              </van-checkbox>
+            </van-space>
+          </van-checkbox-group>
+        </van-collapse-item>
+      </van-collapse>
+      <van-field v-model="compressionAlgorithm" is-link readonly :label="t('network.compressionAlgorithm')"
+        :disabled="moduleInfo.serviceState" :placeholder="t('common.default')"
+        @click="showCompressionAlgorithmPicker = true" />
+      <van-popup v-model:show="showCompressionAlgorithmPicker" destroy-on-close position="bottom">
+        <van-picker :columns="compressionAlgorithmOption" @confirm="onCompressionAlgorithmConfirm"
+          @cancel="showCompressionAlgorithmPicker = false" />
+      </van-popup>
+      <van-field v-model="commandObj.rpcPort" :label="t('network.rpc_port')" placeholder="15888" type="digit"
+        :disabled="moduleInfo.serviceState" />
+      <van-field v-model="commandObj.tunName" :label="t('network.tun_name')" placeholder="留空自动生成"
+        :disabled="moduleInfo.serviceState" />
+    </div>
+
+    <div>
+      <van-field v-model="loggin" is-link readonly :label="t('common.logging')" :placeholder="t('common.close')"
+        :disabled="moduleInfo.serviceState" @click="showLogginPicker = true" />
+
+      <van-field v-model="listen" is-link readonly :label="t('network.listenPort')" placeholder="不监听"
+        :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
+      <div v-show="commandObj.listen == 'true'">
+        <van-field :label="t('network.listenIPv6')" input-align="right">
+          <template #input>
+            <van-switch v-model="commandObj.listenIPv6" :disabled="moduleInfo.serviceState" />
+          </template>
+        </van-field>
+        <van-field v-model="commandObj.tcpPort" type="digit" :label="t('network.listenTCPorUDPPort')"
+          placeholder="11010" :disabled="moduleInfo.serviceState" />
+        <van-field v-model="commandObj.wsPort" type="digit" :label="t('network.listenWSPort')" placeholder="11010"
+          :disabled="moduleInfo.serviceState" />
+        <van-field v-model="commandObj.wssPort" type="digit" :label="t('network.listenWSSPort')" placeholder="11010"
+          :disabled="moduleInfo.serviceState" />
+        <van-field v-model="commandObj.wgPort" type="digit" :label="t('network.listenWGPort')" placeholder="11010"
+          :disabled="moduleInfo.serviceState" />
+      </div>
+    </div>
+  </van-cell-group>
+  <van-popup v-model:show="showLogginPicker" destroy-on-close position="bottom">
+    <van-picker :columns="logLevel" @confirm="onLogginConfirm" @cancel="showLogginPicker = false" />
+  </van-popup>
+  <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
+        <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
+          @cancel="showPicker2 = false" />
+      </van-popup>
 </template>
 <script setup>
 const props = defineProps({
@@ -175,11 +201,16 @@ const commandObj = ref({
   'compressionAlgorithm': 'none',
   'logLevel': 'off',
   'rpcPort': 15888,
+  'tcpPort': 11010,
+  'wssPort': 11010,
+  'wsPort': 11010,
+  'wgPort': 11010,
   'tunName': '',
   'advance': [],
   'conf': '',
   'webServer': '',
-  'privateDeployment': false
+  'privateDeployment': false,
+  'listenIPv6': false
 });
 // TODO 国际化
 const textMap = {
@@ -189,8 +220,8 @@ const textMap = {
     "web": 'WEB配置'
   },
   "listenOption": {
-    "true": '启用监听',
-    "false": '不监听'
+    true: '启用监听',
+    false: '不监听'
   },
   "compressionAlgorithmOption": {
     "none": '默认',
@@ -403,6 +434,12 @@ const checkContent = (runMode) => {
     //RPC门户端口
     if (!isEmpty(commandObj.value.rpcPort)) {
       commandObj.value.rpcPort = 15888;
+    } else if (!isValidPort(commandObj.value.rpcPort)) {
+      showNotify({
+        type: 'danger',
+        message: t('network.rpcPort_error')
+      });
+      return;
     }
     commandArgs += ` --rpc-portal ${commandObj.value.rpcPort} `
     //tun设备名称
@@ -495,16 +532,6 @@ const startService = () => {
       break;
   }
 }
-const startServiceConfirm = () => {
-  showConfirmDialog({
-    title: t('common.ask_service_start'),
-  })
-    .then(() => {
-      startService()
-    })
-    .catch(() => resolve(true));
-
-}
 
 const init = () => {
   console.info('init')
@@ -514,13 +541,6 @@ const init = () => {
     forbidClick: true,
     loadingType: 'spinner',
   });
-  let leaveNetwork = localStorage.getItem("EasytierForKSU.leaveNetwork");
-  if (typeof leaveNetwork == "undefined" || leaveNetwork == null) {
-    leaveNetwork = [];
-    localStorage.setItem("EasytierForKSU.leaveNetwork", JSON.stringify(leaveNetwork));
-  } else {
-    leaveNetwork = JSON.parse(leaveNetwork);
-  }
   setTimeout(() => {
     execCmd(`sh ${MODDIR}/zerotier.sh status`).then(v => {
       const statusObj = JSON.parse(v);
@@ -541,8 +561,4 @@ const init = () => {
 
 </script>
 
-<style>
-.full-button {
-  height: 100%;
-}
-</style>
+<style></style>
