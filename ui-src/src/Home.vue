@@ -85,21 +85,29 @@
             </template>
           </van-cell>
           <van-field v-for="(route, ridx) in commandObj.proxy_cidrs" :key="ridx" v-model="commandObj.proxy_cidrs[ridx]"
-            clearable placeholder="192.168.0.0/23"><template #button>
+            clearable placeholder="192.168.0.0/23">
+            <template #button>
               <van-icon name="delete-o" color="#1989fa" size="1.2rem" @click="commandObj.proxy_cidrs.splice(ridx, 1)" />
-            </template></van-field>
+            </template>
+          </van-field>
         </van-collapse-item>
         <van-collapse-item :title="t('network.flags_switch')" name="2">
           <van-checkbox-group v-model="checked" direction="horizontal" shape="square" @change="checkAllChange">
-            <van-space direction="vertical" fill>
-              <van-checkbox :disabled="moduleInfo.serviceState" label-position="left" :name="item.name"
-                v-for="(item, index) in textMap.advanced" :key="index">
-                <template #default>
-                  <van-cell :title="item.title" :label="item.label">
-                  </van-cell>
-                </template>
-              </van-checkbox>
-            </van-space>
+            <van-cell
+              v-for="(item, index) in textMap.advanced"
+              clickable
+              :key="item"
+              :title="item.title"
+              :label="item.label"
+              @click="commandObj.value.advance[index].toggle()"
+            >
+              <template #right-icon>
+                <van-checkbox
+                  :name="item.name"
+                  @click.stop
+                />
+              </template>
+            </van-cell>
           </van-checkbox-group>
         </van-collapse-item>
       </van-collapse>
@@ -130,11 +138,11 @@
         </van-field>
         <van-field v-model="commandObj.tcpPort" type="digit" :label="t('network.listenTCPorUDPPort')"
           placeholder="11010" :disabled="moduleInfo.serviceState" />
-        <van-field v-model="commandObj.wsPort" type="digit" :label="t('network.listenWSPort')" placeholder="11010"
+        <van-field v-model="commandObj.wsPort" type="digit" :label="t('network.listenWSPort')" placeholder="11011"
           :disabled="moduleInfo.serviceState" />
-        <van-field v-model="commandObj.wssPort" type="digit" :label="t('network.listenWSSPort')" placeholder="11010"
+        <van-field v-model="commandObj.wssPort" type="digit" :label="t('network.listenWSSPort')" placeholder="11012"
           :disabled="moduleInfo.serviceState" />
-        <van-field v-model="commandObj.wgPort" type="digit" :label="t('network.listenWGPort')" placeholder="11010"
+        <van-field v-model="commandObj.wgPort" type="digit" :label="t('network.listenWGPort')" placeholder="11011"
           :disabled="moduleInfo.serviceState" />
       </div>
     </div>
@@ -143,9 +151,9 @@
     <van-picker :columns="logLevel" @confirm="onLogginConfirm" @cancel="showLogginPicker = false" />
   </van-popup>
   <van-popup v-model:show="showPicker2" destroy-on-close position="bottom">
-        <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
-          @cancel="showPicker2 = false" />
-      </van-popup>
+    <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
+      @cancel="showPicker2 = false" />
+  </van-popup>
 </template>
 <script setup>
 const props = defineProps({
@@ -186,7 +194,7 @@ const showPicker2 = ref(false);
 const runModeName = ref('');
 const compressionAlgorithm = ref('');
 const loggin = ref('');
-
+const checkboxRefs = ref([]);
 const commandObj = ref({
   'runMode': 'command',
   'networkName': '',
@@ -202,9 +210,9 @@ const commandObj = ref({
   'logLevel': 'off',
   'rpcPort': 15888,
   'tcpPort': 11010,
-  'wssPort': 11010,
-  'wsPort': 11010,
-  'wgPort': 11010,
+  'wssPort': 11012,
+  'wsPort': 11011,
+  'wgPort': 11011,
   'tunName': '',
   'advance': [],
   'conf': '',
@@ -292,6 +300,10 @@ const textMap = {
 const checkAllChange = (val) => {
   commandObj.value.advance = checked.value;
 }
+
+const toggle = (index) => {
+  checkboxRefs.value[index].toggle();
+};
 const fillOptions = () => {
   console.info('填充参数')
   for (const key in textMap) {
@@ -321,7 +333,7 @@ const extensions = computed(() => {
   return result
 })
 onMounted(() => {
-  console.info(`服务状态：moduleInfo.serviceState`)
+  console.info(`服务状态：${moduleInfo.serviceState}`)
   fillOptions();
   init()
 })
@@ -347,10 +359,20 @@ const onCompressionAlgorithmConfirm = ({ selectedValues }) => {
   compressionAlgorithm.value = textMap.compressionAlgorithmOption[selectedValues.join(',')];
   showCompressionAlgorithmPicker.value = false;
 };
+// 监听端口
+const addPortToCommandArgs=(commandArgs, port, protocol)=> {
+    if (isValidPort(port)) {
+        commandArgs += ` -l ${protocol}:${port} `;
+    }
+    return commandArgs;
+}
 /**
- * 检查已填报的内容
+ * 检查已填报的内容，并返回命令行参数
+ * @param {string} runMode 运行模式
+ * @returns {string} 命令行参数
  */
 const checkContent = (runMode) => {
+  debugger
   let commandArgs = `${getCorePath()} `
   if (runMode === 'command') {
     //设置网络名称
@@ -413,10 +435,18 @@ const checkContent = (runMode) => {
     //TODO 监听端口的时候需要给出自定义端口选项
     if (commandObj.value.listen === 'true') {
       // 如果启用监听，使用默认端口
-      commandArgs += ' -l '
+      addPortToCommandArgs(commandArgs, commandObj.value.tcpPort, 'tcp');
+      addPortToCommandArgs(commandArgs, commandObj.value.tcpPort, 'udp');
+      addPortToCommandArgs(commandArgs, commandObj.value.wssPort, 'wss');
+      addPortToCommandArgs(commandArgs, commandObj.value.wsPort, 'ws');
+      addPortToCommandArgs(commandArgs, commandObj.value.wgPort, 'wg');
     } else if (commandObj.value.listen === 'false') {
       // 不监听
       commandArgs += ' --no-listener'
+    }
+    // 监听IPv6
+    if (!commandObj.value.listenIPv6) {
+      commandArgs += ' --disable-ipv6'
     }
     //主机名
     if (!isEmpty(commandObj.value.hostName)) {
@@ -485,7 +515,6 @@ const checkContent = (runMode) => {
         }
       });
     }
-    return commandArgs;
   } else if (runMode === 'file') {
     if (isEmpty(commandObj.value.conf)) {
       showNotify({
@@ -494,6 +523,7 @@ const checkContent = (runMode) => {
       });
       return;
     }
+    commandArgs += ` -c ${ETPATH}/config.toml `
   } else if (runMode === 'web') {
     if (isEmpty(commandObj.value.webServer)) {
       showNotify({
@@ -502,6 +532,7 @@ const checkContent = (runMode) => {
       });
       return;
     }
+    commandArgs += ` -w ${commandObj.value.webServer} `
   } else {
     showNotify({
       type: 'danger',
@@ -509,12 +540,13 @@ const checkContent = (runMode) => {
     });
     return;
   }
+  return commandArgs;
 
 };// 启动服务
 const startService = () => {
+  const cmdLine=checkContent(commandObj.value.runMode);
+  console.info(cmdLine)
   moduleInfo.serviceState = !moduleInfo.serviceState;
-  checkContent(commandObj.value.runMode)
-
   switch (commandObj.value.runMode) {
     case "command":
       // 核心代码

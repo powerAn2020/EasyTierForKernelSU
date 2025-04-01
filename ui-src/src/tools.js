@@ -108,7 +108,7 @@ export const isValidPort = (port) => {
   if(!port){
     return false;
   }
-  const pattern = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
+  const pattern = /^([1-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
   return pattern.test(port);
 }
 export const logDir = ETPATH + '/log'
