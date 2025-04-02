@@ -102,6 +102,7 @@ export const isValidIpv4Subnet = (ipSubnet) => {
 /**
  * 校验端口号
  * @param {string} port 
+ * 端口号范围1-65535
  * @returns 
  */
 export const isValidPort = (port) => {
@@ -110,5 +111,18 @@ export const isValidPort = (port) => {
   }
   const pattern = /^([1-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
   return pattern.test(port);
+}
+/**
+ * 校验URL和端口
+ * @param {string} tcp/udp:127.0.0.1:port 
+ * @returns 
+ */
+export const isValidURLPort = (url) => {
+  if(!url){
+    return false;
+  }
+  const regex = /^(udp|tcp):\/\/127\.0\.0\.1:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3})$/;
+
+  return regex.test(url);
 }
 export const logDir = ETPATH + '/log'

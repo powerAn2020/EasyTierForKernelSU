@@ -13,6 +13,7 @@
     <van-picker :columns="runModeOption" v-model="selectedRunModeValues" @confirm="onRunModeConfirm"
       @cancel="showRunModePicker = false" />
   </van-popup>
+  <!-- 命令行模式 -->
   <div v-show="commandObj.runMode == 'command'">
     <van-cell-group inset :title="t('common.base_settings')">
       <van-field v-model="commandObj.networkName" :label="t('network.networkName')" :disabled="moduleInfo.serviceState"
@@ -30,19 +31,27 @@
         :rules="[{ validator: validatorMessage }]" :disabled="moduleInfo.serviceState" />
     </van-cell-group>
   </div>
-
+  <!-- web模式 -->
   <div v-show="commandObj.runMode == 'web'">
     <van-cell-group inset :title="t('network.webMode')">
       <van-field v-model="commandObj.webServer" :label="t('network.webServer')" placeholder=""
         :disabled="moduleInfo.serviceState" :rules="[{ validator: validatorMessage }]" />
       <van-field :label="t('network.local_web')" input-align="right">
         <template #input>
-          <van-switch @change="moduleInfo.changePrivateDeployment" v-model="moduleInfo.privateDeployment"
+          <van-switch @change="moduleInfo.changePrivateDeployment" v-model="commandObj.privateDeployment"
             :disabled="moduleInfo.serviceState" />
         </template>
       </van-field>
+      <!-- web私有化 -->
+      <van-field v-show="commandObj.privateDeployment" v-model="commandObj.webListenPort" type="digit" label="web监听端口"
+        placeholder="22020" maxlength="5" :disabled="moduleInfo.serviceState" />
+      <van-field v-show="commandObj.privateDeployment" v-model="commandObj.webRestfulPort" type="digit"
+        label="restful端口" placeholder="11211" maxlength="5" :disabled="moduleInfo.serviceState" />
+      <van-field v-show="commandObj.privateDeployment" v-model="commandObj.webListenProtocol" is-link readonly
+        label="监听协议" :disabled="moduleInfo.serviceState" @click="showPicker3 = true" />
     </van-cell-group>
   </div>
+  <!-- 配置文件模式 -->
   <div v-show="commandObj.runMode == 'file'">
     <van-cell-group inset :title="t('network.fileMode')">
       <van-cell center title="操作">
@@ -53,8 +62,9 @@
           <van-button type="primary" size="mini" icon="plus" plain @click="update()">保存配置</van-button>
         </template>
       </van-cell>
-      <codemirror v-model:value="commandObj.conf" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
-        :extensions="extensions" :autofocus="true" :indent-with-tab="true" :disabled="moduleInfo.serviceState" />
+      <codemirror v-model="commandObj.conf" :style="{ height: '50vh' }" :tabSize="2" placeholder="Toml"
+        :extensions="extensions" :autofocus="true" :indent-with-tab="true" :disabled="moduleInfo.serviceState"
+        @blur="changeCall" />
     </van-cell-group>
   </div>
   <van-cell-group inset :title="t('common.advanced_settings')">
@@ -93,19 +103,10 @@
         </van-collapse-item>
         <van-collapse-item :title="t('network.flags_switch')" name="2">
           <van-checkbox-group v-model="checked" direction="horizontal" shape="square" @change="checkAllChange">
-            <van-cell
-              v-for="(item, index) in textMap.advanced"
-              clickable
-              :key="item"
-              :title="item.title"
-              :label="item.label"
-              @click="commandObj.value.advance[index].toggle()"
-            >
+            <van-cell v-for="(item, index) in textMap.advanced" clickable :key="item" :title="item.title"
+              :label="item.label" @click="commandObj.value.advance[index].toggle()">
               <template #right-icon>
-                <van-checkbox
-                  :name="item.name"
-                  @click.stop
-                />
+                <van-checkbox :name="item.name" @click.stop />
               </template>
             </van-cell>
           </van-checkbox-group>
@@ -119,31 +120,34 @@
           @cancel="showCompressionAlgorithmPicker = false" />
       </van-popup>
       <van-field v-model="commandObj.rpcPort" :label="t('network.rpc_port')" placeholder="15888" type="digit"
-        :disabled="moduleInfo.serviceState" />
+        maxlength="5" :disabled="moduleInfo.serviceState" />
       <van-field v-model="commandObj.tunName" :label="t('network.tun_name')" placeholder="留空自动生成"
         :disabled="moduleInfo.serviceState" />
+      <van-field :label="t('network.listenIPv6')" input-align="right">
+        <template #input>
+          <van-switch v-model="commandObj.listenIPv6" :disabled="moduleInfo.serviceState" />
+        </template>
+      </van-field>
+
     </div>
 
     <div>
       <van-field v-model="loggin" is-link readonly :label="t('common.logging')" :placeholder="t('common.close')"
         :disabled="moduleInfo.serviceState" @click="showLogginPicker = true" />
-
       <van-field v-model="listen" is-link readonly :label="t('network.listenPort')" placeholder="不监听"
         :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
       <div v-show="commandObj.listen == 'true'">
-        <van-field :label="t('network.listenIPv6')" input-align="right">
-          <template #input>
-            <van-switch v-model="commandObj.listenIPv6" :disabled="moduleInfo.serviceState" />
-          </template>
-        </van-field>
-        <van-field v-model="commandObj.tcpPort" type="digit" :label="t('network.listenTCPorUDPPort')"
-          placeholder="11010" :disabled="moduleInfo.serviceState" />
-        <van-field v-model="commandObj.wsPort" type="digit" :label="t('network.listenWSPort')" placeholder="11011"
-          :disabled="moduleInfo.serviceState" />
-        <van-field v-model="commandObj.wssPort" type="digit" :label="t('network.listenWSSPort')" placeholder="11012"
-          :disabled="moduleInfo.serviceState" />
-        <van-field v-model="commandObj.wgPort" type="digit" :label="t('network.listenWGPort')" placeholder="11011"
-          :disabled="moduleInfo.serviceState" />
+
+        <van-field v-model="commandObj.tcpPort" type="digit" :label="t('network.listenTCPort')" maxlength="5"
+          placeholder="11010,写0不监听" :disabled="moduleInfo.serviceState" @blur="updateListenPort" />
+        <van-field v-model="commandObj.udpPort" type="digit" :label="t('network.listenUDPort')" maxlength="5"
+          placeholder="11010,写0不监听" :disabled="moduleInfo.serviceState" @blur="updateListenPort" />
+        <van-field v-model="commandObj.wsPort" type="digit" :label="t('network.listenWSPort')" maxlength="5"
+          placeholder="11011,写0不监听" :disabled="moduleInfo.serviceState" @blur="updateListenPort" />
+        <van-field v-model="commandObj.wgPort" type="digit" :label="t('network.listenWGPort')" maxlength="5"
+          placeholder="11011,写0不监听" :disabled="moduleInfo.serviceState" @blur="updateListenPort" />
+        <van-field v-model="commandObj.wssPort" type="digit" :label="t('network.listenWSSPort')"
+          placeholder="11012,写0不监听" :disabled="moduleInfo.serviceState" @blur="updateListenPort" maxlength="5" />
       </div>
     </div>
   </van-cell-group>
@@ -154,6 +158,10 @@
     <van-picker :columns="listenOption" v-model="selectedListenValues" @confirm="onListenConfirm"
       @cancel="showPicker2 = false" />
   </van-popup>
+  <van-popup v-model:show="showPicker3" destroy-on-close position="bottom">
+    <van-picker :columns="protocolOption" v-model="selectedProtocolValues" @confirm="onProtocolConfirm"
+      @cancel="showPicker3 = false" />
+  </van-popup>
 </template>
 <script setup>
 const props = defineProps({
@@ -162,14 +170,14 @@ const props = defineProps({
 //接收父组件传来的值
 console.info(`theme:${props.theme}`)
 import { onMounted, ref, computed } from 'vue';
-import { MODDIR, ETPATH, execCmd, getCorePath, isValidIpv4Subnet, isValidPort, isEmpty, logDir } from './tools'
+import { MODDIR, ETPATH, execCmd, getCorePath, isValidIpv4Subnet, isValidPort, isEmpty, logDir, saveFile } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
 import { Codemirror } from "vue-codemirror";
 import { StreamLanguage } from "@codemirror/language"
 import { toml } from "@codemirror/legacy-modes/mode/toml"
 import { oneDark } from "@codemirror/theme-one-dark"
-
+import { parse as tomlParse, stringify as tomlStringify } from '@iarna/toml';
 const router = useRouter()
 const { t } = useI18n();
 const moduleInfo = useModuleInfoStore();
@@ -178,25 +186,28 @@ const listen = ref('');
 const dhcpEnable = ref(false);
 const ready = ref(false);
 const activeNames = ref(['']);
+
 let runModeOption = [];
 let listenOption = [];
+let protocolOption = [];
 let compressionAlgorithmOption = [];
 let logLevel = [];
 
 const selectedRunModeValues = ref(['command']);
 const selectedListenValues = ref(['false']);
+const selectedProtocolValues = ref(['udp']);
 
 const validatorMessage = (val) => `${val} 不合法，请重新输入`;
 const showRunModePicker = ref(false);
 const showCompressionAlgorithmPicker = ref(false);
 const showLogginPicker = ref(false);
 const showPicker2 = ref(false);
+const showPicker3 = ref(false);
 const runModeName = ref('');
 const compressionAlgorithm = ref('');
 const loggin = ref('');
-const checkboxRefs = ref([]);
 const commandObj = ref({
-  'runMode': 'command',
+  'runMode': 'web',
   'networkName': '',
   'networkPassWd': '',
   'dhcpEnable': true,
@@ -210,15 +221,40 @@ const commandObj = ref({
   'logLevel': 'off',
   'rpcPort': 15888,
   'tcpPort': 11010,
-  'wssPort': 11012,
+  'udpPort': 11010,
   'wsPort': 11011,
   'wgPort': 11011,
+  'wssPort': 11012,
   'tunName': '',
   'advance': [],
-  'conf': '',
+  'conf': `instance_name = "default"
+instance_id = "f9f05421-7c6b-47d6-a67d-4d58d49f51d8"
+dhcp = true
+listeners = []
+exit_nodes = []
+rpc_portal = "0.0.0.0:15888"
+
+[network_identity]
+network_name = "mynetwork"
+network_secret = "mysecret"
+
+[[peer]]
+uri = "tcp://public.easytier.top:11010"
+
+[flags]
+enable_kcp_proxy = true
+
+[file_logger]
+level = "info"
+dir = "${logDir}"
+`,
   'webServer': '',
   'privateDeployment': false,
-  'listenIPv6': false
+  'listenIPv6': false,
+  'webListenProtocol': 'TCP',
+  'webListenPort': 11010,
+  'webRestfulPort': 11211
+
 });
 // TODO 国际化
 const textMap = {
@@ -228,8 +264,12 @@ const textMap = {
     "web": 'WEB配置'
   },
   "listenOption": {
-    true: '启用监听',
-    false: '不监听'
+    'true': '启用监听',
+    'false': '不监听'
+  },
+  "protocolOption": {
+    'TCP': 'TCP',
+    'UDP': 'UDP'
   },
   "compressionAlgorithmOption": {
     "none": '默认',
@@ -237,10 +277,11 @@ const textMap = {
   },
   "logLevel": {
     "off": '关闭',
-    "warn": '警告',
+    "trace": '跟踪',
     "info": '信息',
     "debug": '调试',
-    "trace": '跟踪'
+    "warn": '警告',
+    "error": '错误'
   },
   "advanced": [
     {
@@ -301,9 +342,6 @@ const checkAllChange = (val) => {
   commandObj.value.advance = checked.value;
 }
 
-const toggle = (index) => {
-  checkboxRefs.value[index].toggle();
-};
 const fillOptions = () => {
   console.info('填充参数')
   for (const key in textMap) {
@@ -317,6 +355,8 @@ const fillOptions = () => {
         compressionAlgorithmOption.push({ text: obj[k], value: k });
       } else if (key == 'logLevel') {
         logLevel.push({ text: obj[k], value: k });
+      } else if (key == 'protocolOption') {
+        protocolOption.push({ text: obj[k], value: k });
       }
     }
   }
@@ -325,6 +365,7 @@ const fillOptions = () => {
   compressionAlgorithm.value = textMap.compressionAlgorithmOption[commandObj.value.compressionAlgorithm];
   loggin.value = textMap.logLevel[commandObj.value.logLevel];
 }
+// vue-codemirror 插件
 const extensions = computed(() => {
   const result = [StreamLanguage.define(toml)]
   if (!props.theme) {
@@ -332,10 +373,85 @@ const extensions = computed(() => {
   }
   return result
 })
+//编辑器回调，更新程序日志和端口信息，用于更新防火墙
+const changeCall = () => {
+  try {
+    let conf = tomlParse(commandObj.value.conf);
+    //更新端口信息，用于放行防火墙
+    if (conf.listeners.length > 0) {
+      //重置为0，不监听
+      commandObj.value.tcpPort = 0;
+      commandObj.value.udpPort = 0;
+      commandObj.value.wssPort = 0;
+      commandObj.value.wsPort = 0;
+      commandObj.value.wgPort = 0;
+      commandObj.value.listen = 'true';
+      conf.listeners.forEach(element => {
+        if (element.indexOf('tcp') > -1) {
+          commandObj.value.tcpPort = element.split(':')[2];
+        } else if (element.indexOf('udp') > -1) {
+          commandObj.value.udpPort = element.split(':')[2];
+        } else if (element.indexOf('wss') > -1) {
+          commandObj.value.wssPort = element.split(':')[2];
+        } else if (element.indexOf('ws') > -1) {
+          commandObj.value.wsPort = element.split(':')[2];
+        } else if (element.indexOf('wg') > -1) {
+          commandObj.value.wgPort = element.split(':')[2];
+        }
+      });
+    } else {
+      commandObj.value.listen = 'false';
+    }
+    listen.value = textMap.listenOption[commandObj.value.listen];
+    onListenConfirm({ selectedValues: [commandObj.value.listen] })
+    //更新日志信息
+    if (conf.file_logger) {
+      commandObj.value.logLevel = conf.file_logger.level;
+    } else {
+      conf.file_logger = {};
+      conf.file_logger['level'] = commandObj.value.logLevel;
+    }
+    conf.file_logger['dir'] = `${logDir}`;
+    loggin.value = textMap.logLevel[commandObj.value.logLevel];
+    onLogginConfirm({ selectedValues: [commandObj.value.logLevel] })
+    //更新配置文件
+    commandObj.value.conf = tomlStringify(conf);
+  } catch (error) {
+    console.error(error)
+  }
+  console.info('编辑器回调')
+}
+// 监听端口回调
+// 分别监听端口并根据输入的值回显到conf中，格式为协议://0.0.0.0:port
+const updateListenPort = (value) => {
+  console.info('端口回调')
+  if (commandObj.value.listen == 'false') { }
+  let conf = tomlParse(commandObj.value.conf);
+  // if(typeof(conf.listeners)=="undefined"){
+  conf.listeners = [];
+  // }
+  if (isValidPort(commandObj.value.wssPort)) {
+    conf.listeners.push(`wss://0.0.0.0:${commandObj.value.wssPort}`)
+  }
+  if (isValidPort(commandObj.value.udpPort)) {
+    conf.listeners.push(`udp://0.0.0.0:${commandObj.value.udpPort}`)
+  }
+  if (isValidPort(commandObj.value.tcpPort)) {
+    conf.listeners.push(`tcp://0.0.0.0:${commandObj.value.tcpPort}`)
+  }
+  if (isValidPort(commandObj.value.wsPort)) {
+    conf.listeners.push(`ws://0.0.0.0:${commandObj.value.wsPort}`)
+  }
+  if (isValidPort(commandObj.value.wgPort)) {
+    conf.listeners.push(`wg://0.0.0.0:${commandObj.value.wgPort}`)
+  }
+  debugger
+  commandObj.value.conf = tomlStringify(conf);
+}
 onMounted(() => {
   console.info(`服务状态：${moduleInfo.serviceState}`)
+  // init()
   fillOptions();
-  init()
 })
 
 const onRunModeConfirm = ({ selectedValues }) => {
@@ -349,9 +465,21 @@ const onListenConfirm = ({ selectedValues }) => {
   listen.value = textMap.listenOption[selectedValues.join(',')];
   showPicker2.value = false;
 };
+const onProtocolConfirm = ({ selectedValues }) => {
+  commandObj.value.webListenProtocol = selectedValues.join(',');
+  // protocol.value = textMap.protocolOption[selectedValues.join(',')];
+  showPicker3.value = false;
+};
 const onLogginConfirm = ({ selectedValues }) => {
   commandObj.value.logLevel = selectedValues.join(',');
   loggin.value = textMap.logLevel[selectedValues.join(',')];
+  if (commandObj.value.runMode == 'file') {
+    let conf = tomlParse(commandObj.value.conf);
+    conf.file_logger = {};
+    conf.file_logger['level'] = commandObj.value.logLevel;
+    conf.file_logger['dir'] = `${logDir}`;
+    commandObj.value.conf = tomlStringify(conf);
+  }
   showLogginPicker.value = false;
 };
 const onCompressionAlgorithmConfirm = ({ selectedValues }) => {
@@ -360,11 +488,11 @@ const onCompressionAlgorithmConfirm = ({ selectedValues }) => {
   showCompressionAlgorithmPicker.value = false;
 };
 // 监听端口
-const addPortToCommandArgs=(commandArgs, port, protocol)=> {
-    if (isValidPort(port)) {
-        commandArgs += ` -l ${protocol}:${port} `;
-    }
-    return commandArgs;
+const addPortToCommandArgs = (commandArgs, port, protocol) => {
+  if (isValidPort(port)) {
+    commandArgs += ` -l ${protocol}:${port} `;
+  }
+  return commandArgs;
 }
 /**
  * 检查已填报的内容，并返回命令行参数
@@ -372,7 +500,6 @@ const addPortToCommandArgs=(commandArgs, port, protocol)=> {
  * @returns {string} 命令行参数
  */
 const checkContent = (runMode) => {
-  debugger
   let commandArgs = `${getCorePath()} `
   if (runMode === 'command') {
     //设置网络名称
@@ -436,7 +563,7 @@ const checkContent = (runMode) => {
     if (commandObj.value.listen === 'true') {
       // 如果启用监听，使用默认端口
       addPortToCommandArgs(commandArgs, commandObj.value.tcpPort, 'tcp');
-      addPortToCommandArgs(commandArgs, commandObj.value.tcpPort, 'udp');
+      addPortToCommandArgs(commandArgs, commandObj.value.udpPort, 'udp');
       addPortToCommandArgs(commandArgs, commandObj.value.wssPort, 'wss');
       addPortToCommandArgs(commandArgs, commandObj.value.wsPort, 'ws');
       addPortToCommandArgs(commandArgs, commandObj.value.wgPort, 'wg');
@@ -459,8 +586,8 @@ const checkContent = (runMode) => {
     // 日志级别
     if (!isEmpty(commandObj.value.logLevel)) {
       commandArgs += ` --file-log-level ${commandObj.value.logLevel} `
-      commandArgs += ` --file-log-dir ${logDir} `
     }
+    commandArgs += ` --file-log-dir ${logDir} `
     //RPC门户端口
     if (!isEmpty(commandObj.value.rpcPort)) {
       commandObj.value.rpcPort = 15888;
@@ -486,9 +613,6 @@ const checkContent = (runMode) => {
           case "disableP2P":
             commandArgs += ' --disable-p2p '
             break;
-          // case "listenIPv6":
-          //   commandArgs += ' --listen-ipv6 '
-          //   break;
           case "enableKCPProxy":
             commandArgs += ' --enable-kcp-proxy '
             break;
@@ -523,6 +647,8 @@ const checkContent = (runMode) => {
       });
       return;
     }
+
+    saveFile(commandObj.value.conf, `${MODDIR}/config.toml`);
     commandArgs += ` -c ${ETPATH}/config.toml `
   } else if (runMode === 'web') {
     if (isEmpty(commandObj.value.webServer)) {
@@ -533,6 +659,9 @@ const checkContent = (runMode) => {
       return;
     }
     commandArgs += ` -w ${commandObj.value.webServer} `
+    if (commandObj.value.privateDeployment) {
+      commandArgs += ` --private-deployment `
+    }
   } else {
     showNotify({
       type: 'danger',
@@ -544,7 +673,7 @@ const checkContent = (runMode) => {
 
 };// 启动服务
 const startService = () => {
-  const cmdLine=checkContent(commandObj.value.runMode);
+  const cmdLine = checkContent(commandObj.value.runMode);
   console.info(cmdLine)
   moduleInfo.serviceState = !moduleInfo.serviceState;
   switch (commandObj.value.runMode) {

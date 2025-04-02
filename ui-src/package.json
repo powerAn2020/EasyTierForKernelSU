@@ -15,6 +15,7 @@
     "@codemirror/language": "^6.11.0",
     "@codemirror/legacy-modes": "^6.5.0",
     "@codemirror/theme-one-dark": "^6.1.2",
+    "@iarna/toml": "3.0.0",
     "buffer": "^6.0.3",
     "kernelsu": "^1.0.6",
     "pinia": "^3.0.1",
