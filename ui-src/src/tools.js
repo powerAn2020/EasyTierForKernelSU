@@ -84,6 +84,12 @@ export const isEmpty = (obj) => {
 export const getCorePath = () => {
   return ETPATH + "/bin/easytier-core"
 }
+export const getWebPath = () => {
+  return ETPATH + "/bin/easytier-web"
+}
+export const getCliPath = () => {
+  return ETPATH + "/bin/easytier-cli"
+}
 /**
  * 校验IP/子网格式 
  * "192.168.10.0/24","192.168.10.0" 有效
@@ -126,3 +132,63 @@ export const isValidURLPort = (url) => {
   return regex.test(url);
 }
 export const logDir = ETPATH + '/log'
+
+/**
+ * 
+ * @param {string} tableData 
+ * @param {string} headerDirection vertical/horizontal
+ * @returns 
+ */
+export const table2JsonObject=(tableData, headerDirection)=>{
+  // 按行分割数据
+  const lines = tableData.split('\n');
+
+  // 过滤掉分隔线和首尾的边框行
+  const dataLines = lines.filter((line, index) => {
+      return index > 0 && index < lines.length - 1 && line.includes('│');
+  });
+
+  if (headerDirection === 'vertical') {
+      // 纵向表头处理
+      const resultObj = {};
+      dataLines.forEach(line => {
+          const [keyPart, valuePart] = line.split('│').slice(1, -1).map(part => part.trim());
+          if (resultObj[keyPart]) {
+              if (Array.isArray(resultObj[keyPart])) {
+                  resultObj[keyPart].push(valuePart);
+              } else {
+                  resultObj[keyPart] = [resultObj[keyPart], valuePart];
+              }
+          } else {
+              resultObj[keyPart] = valuePart;
+          }
+      });
+      return resultObj;
+  } else if (headerDirection === 'horizontal') {
+      // 横向表头处理
+      const headers = dataLines[0].split('│').slice(1, -1).map(header => header.trim());
+      const rows = dataLines.slice(1);
+      const resultArr = [];
+
+      rows.forEach(row => {
+          const values = row.split('│').slice(1, -1).map(value => value.trim());
+          const rowObj = {};
+          headers.forEach((header, index) => {
+              if (rowObj[header]) {
+                  if (Array.isArray(rowObj[header])) {
+                      rowObj[header].push(values[index]);
+                  } else {
+                      rowObj[header] = [rowObj[header], values[index]];
+                  }
+              } else {
+                  rowObj[header] = values[index];
+              }
+          });
+          resultArr.push(rowObj);
+      });
+      return resultArr;
+  } else {
+      console.error('Invalid header direction. Please use "vertical" or "horizontal".');
+      return null;
+  }
+}

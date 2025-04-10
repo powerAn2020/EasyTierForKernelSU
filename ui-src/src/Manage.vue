@@ -41,15 +41,6 @@ const init = () => {
     show.value=false;
   }
   url.value = urlStart;
-  // execCmdWithErrno(`sh ${MODDIR}/api.sh apiToken show`).then(v => {
-  //   console.info(`v:${v}`)
-  //   if (v == 0) {
-  //     router.push('/manage/network')
-  //   } else {
-  //     show.value = true;
-  //     // showDialog({ message: '未配置apiToken,先去设置页添加一个吧' });
-  //   }
-  // })
 
 }
 const onClickLeft=()=>{

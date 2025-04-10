@@ -8,74 +8,14 @@
 ###
 ### Options:
 ###   -h                                            -- Show this message.
-###   <api_type>   local/central
-###     local
-###       status                                    -- Show Node Status
-###       service                                    -- Manage easytier-One Service Status
-###         action     value:[ start | stop ]
-###       network                                   -- When the action is "list", "networkid" and "bodydata" are optional. When the action is "leave", "bodydata" is optional. When the action is "join", "networkid" and "bodydata" are required.
-###         action     value:[ list | leave | join ]
-###         networkid  value:[ networkid ](optional)
-###         bodydata   value:[ JSON object ](optional)
-###       peer                                      -- All the nodes your node knows about
-###       firewall                                  -- Control the firewall to allow traffic into port 9993
-###         action     value:[ A | D ]
-###       router                                    -- Set the easytier traffic routing method
-###         router     value:[ routing (unrealized) | main ]
-###         action     value:[ A | D ]
-###       orbit                                     -- Join Private Root Servers
-###         moonid     value:[ moonid ]
-###     central
-###       status                                    -- Show Center Status
-###       network                                   -- When the action is "list", "networkid" and "bodydata" are optional. When the action is "remove", "bodydata" is optional. When the action is "add", No parameters are required. When the action is "modify", "networkid" and "bodydata" are required.
-###         action     value:[ list | remove | add | modify ]
-###         networkid  value:[ networkid ](optional)
-###         bodydata   value:[ JSON object ](optional)
-###       member                                     -- When the action is "list", "bodydata" and "memberID" are optional. When the action is "remove", "bodydata" is optional. When the action is "modify", "networkid", "memberID" and "bodydata" are required.
-###         action     value:[ list | remove | modify ]
-###         networkid  value:[ networkid ] (optional)
-###         memberID   value:[ memberID ] (optional)
-###         bodydata   value:[ JSON object ] (optional)
-###     apiToken                                    -- Manage the tokenAuth for accessing the central API
-###       action       value:[ show | update ]
-###       key          value:[ apiToken ]
 ###
 ### Example:
 ###   help
 ###     sh api.sh -h
 ###
-###   local
-###     sh api.sh local status
-###     sh api.sh local service start
-###     sh api.sh local service stop
-###     sh api.sh local peer
-###     sh api.sh local firewall A
-###     sh api.sh local firewall D
-###     sh api.sh local router routing A (unrealized)
-###     sh api.sh local router routing D (unrealized)
-###     sh api.sh local router main A
-###     sh api.sh local router main D
-###     sh api.sh local orbit yourMoonid
-###     sh api.sh local network list
-###     sh api.sh local network leave yourNetworkid (suggest: use command `easytier-cli leave yourNetworkid`)
-###     sh api.sh local network join  yourNetworkid {} (suggest: use command `easytier-cli join yourNetworkid`)
-###
-###   central
-###     sh api.sh central status
-###     sh api.sh central network list
-###     sh api.sh central network remove yourNetworkid
-###     sh api.sh central network add
-###     sh api.sh central network modify yourNetworkid {}
-###     sh api.sh central member list yourNetworkid
-###     sh api.sh central member remove yourNetworkid memberID
-###     sh api.sh central member modify yourNetworkid memberID '{"hidden":false,"config":{"authorized":true}}'
-###
-###   apiToken
-###     sh api.sh apiToken show
-###     sh api.sh apiToken update xxxxxxxxx
-###
 
 MODDIR=${0%/*}
+ARCH=$(grep "arch=" /data/adb/modules/easytierForKSU/module.prop | cut -d'=' -f2)
 
 if [ -f "/data/adb/ksu/bin/busybox" ]; then
   # busybox KSU
@@ -89,246 +29,175 @@ else
 fi
 
 ETPATH=/data/adb/easytier
+CORE_BIN=${ETPATH}/bin/easytier-core
+CLI_BIN=${ETPATH}/bin/easytier-cli
+WEB_BIN=${ETPATH}/bin/easytier-web
+CADDY_BIN=${ETPATH}/bin/caddy
+
 MANUAL=${ETPATH}/MANUAL
+KEEP_ON_UNINSTALL=${ETPATH}/KEEP_ON_UNINSTALL
+PRIVATE_DEPLOYMENT=${ETPATH}/PRIVATE_DEPLOYMENT
+CMDLINE=${ETPATH}/CMDLINE
 
-PIDFILE=$ETPATH/easytier-one.pid
-easytierD=$MODDIR/easytier-one
-SECRETFILE=$ETPATH/authtoken.secret
-TOKENAUTH=$ETPATH/TOKENAUTH
-TOKEN=$(cat ${SECRETFILE})
-apiToken=$(grep -v '^[[:space:]]*$' $TOKENAUTH)
-CurlBIN="${MODDIR}/bin/curl -s -A 'easytierForKSU' --connect-timeout 5"
-localAPIBase='http://localhost:9993'
-remoteAPIBase='https://api.easytier.com/api/v1'
-export CURL_CA_BUNDLE=${MODDIR}/bin/cacert.pem
-# =========================== local service ===========================
-local_status() {
-  $CurlBIN -H "X-ZT1-Auth: $TOKEN" ${localAPIBase}/status
-}
+# apiToken=$(grep -v '^[[:space:]]*$' $TOKENAUTH)
 
-local_networks() {
-  # $1 operation GET/POST/DELETE
-  # $2 jsondata {}
-  # $3 /networkid
-  if [ "$1" = "GET" -o "$1" = "DELETE" ]; then
-    $CurlBIN -X $1 -H "X-ZT1-Auth: $TOKEN" ${localAPIBase}/network${3}
-  else
-    $CurlBIN -X $1 -H "X-ZT1-Auth: $TOKEN" -H "Content-Type:application/json" -d "$2" ${localAPIBase}/network$3
-  fi
-}
-
-local_peer() {
-  $CurlBIN -H "X-ZT1-Auth: $TOKEN" ${localAPIBase}/peer
-}
-# $1 :A 和 D
-local_firewall() {
-  if [ "$1" = "A" ]; then
-    touch ${ETPATH}/ALLOW_9993
-  elif [ "$1" = "D" ]; then
-    rm ${ETPATH}/ALLOW_9993
-  else
-    echo "only [A,D]"
-    exit 1
-  fi
-  iptables -$1 INPUT -p udp --dport 9993 -j ACCEPT
-  ip6tables -$1 INPUT -p udp --dport 9993 -j ACCEPT
-}
-# join moon
-local_orbit() {
-  sh ${MODDIR}/easytier-cli orbit $1 $1
-}
-
-local_router() {
-  if [ "$1" = "routing" ]; then
-    echo "Unrealized"
-    #TODO android默认ip rule不走main表 除了提升main表优先级,是否还有其它解决方案?
-    # Reference https://yotam.net/posts/network-management-in-android-routing/
-    # Reference https://unix.stackexchange.com/questions/424314/changing-default-ip-rule-priority-for-main-table
-    # Reference https://github.com/easytier/easytierOne/issues/1715#issuecomment-1780625754
-
-    # ip route add table $your_selected_table_id $cide/$prefix dev $zt_iface_name proto kernel scope link
-  else
-    # Reference https://blog.csdn.net/G_Rookie/article/details/109679262
-    if [ "$2" = "add" ]; then
-      ip rule add from all lookup main pref 9000
-    else
-      ip rule del from all lookup main pref 9000
-    fi
-  fi
-}
-local_service() {
-  if [ "$1" = "start" ]; then
-    if [ ! -f "${ETPATH}/state/disable" ];then
-      touch ${ETPATH}/state/disable
-    fi
-    rm ${ETPATH}/state/disable
-  else
-    touch ${ETPATH}/state/disable
-  fi
-}
-# =========================== Central API ===========================
-api_networks() {
-  # $1 operation GET/POST/DELETE
-  # $2 jsondata {}
-  # $3 /networkid
-  if [ "$1" = "GET" -o "$1" = "DELETE" ]; then
-    $CurlBIN -X $1 -H "Authorization: token $apiToken" ${remoteAPIBase}/network${3}
-  else
-    $CurlBIN -X $1 -H "Content-Type:application/json" -H "Authorization: token $apiToken" -d "$2" ${remoteAPIBase}/network${3}
-  fi
-}
-
-api_members() {
-  # $1 operation GET/POST/DELETE
-  # $2 networkid
-  # $3 /memberID
-  # $4 jsondata {}
-  if [ "$1" = "GET" -o "$1" = "DELETE" ]; then
-    $CurlBIN -X ${1} -H "Authorization: token $apiToken" ${remoteAPIBase}/network/${2}/member${3}
-  else
-    $CurlBIN -X $1 -H "Content-Type:application/json" -H "Authorization: token $apiToken" -d "$4" ${remoteAPIBase}/network/${2}/member${3}
-  fi
-}
-remote_status() {
-  $CurlBIN -X GET -H "Authorization: token $apiToken" ${remoteAPIBase}/status
-}
-check_apiToken() {
-  if [ ! -f ${TOKENAUTH} -o -z "$apiToken" ]; then
-    # 重定向提示内容给webui
-    {
-      echo "The api token was not found. Use 'api.sh update xxxx' to add it." 1>&2
-      exit 1
-    }
-  fi
-}
 help() {
   sed -rn 's/^### ?//;T;p;' "$0"
 }
+
+status_service() {
+  // core进程号
+  corePid=$(pgrep -f "easytier-core")
+  // 卸载保留数据
+  uninstallKeep=true
+  if [ ! -f "${KEEP_ON_UNINSTALL}" ]; then
+    uninstallKeep=false
+  fi
+  // 开机自启
+  autoStart=false
+  if [ ! -f "${MANUAL}" ]; then
+    autoStart=true
+  fi
+  // 私有化web部署
+  privateDeployment=false
+  if [ -f "${PRIVATE_DEPLOYMENT}" ]; then
+    // web进程号
+    privateDeployment=$(pgrep -f "easytier-web")
+  fi
+  // 命令行输出
+  cliStatus=$(${ETPATH}/bin/easytier-core -V)
+  if [ $? != 0 ]; then
+    cliStatus=''
+  fi
+  // 构建返回数据
+  data='{"enable":"'${corePid}'","privateDeployment":"'${privateDeployment}'","autoStart":'${autoStart}',"uninstallKeep":'${uninstallKeep}',"version":"'${cliStatus}'"}'
+  echo $data
+}
+start_service() {
+  corePid=$(pgrep -f "easytier-core")
+  if [ -z $corePid ]; then
+    # 启动服务
+    echo "starting $CORE_BIN  \c"
+    if [ -f ${ETPATH}/state/disable ]; then
+      rm ${ETPATH}/state/disable
+    fi
+    sh ${CMDLINE} &
+    zt_rc=$?
+    if [ $zt_rc -ne 0 ]; then
+      echo "$0: Error ${zt_rc} starting ${CORE_BIN}... bailing."
+      exit $zt_rc
+    fi
+    # 私有化部署启动caddy
+    if [ -f "${PRIVATE_DEPLOYMENT}" ]; then
+      ${CADDY_BIN} start
+    fi
+
+    sed -Ei "s/^description=(\[.*][[:space:]]*)?/description=[ $current_time | ✔︎ service is running ] /g" $MODDIR/module.prop
+  else
+    echo "service is running,pid:$corePid"
+  fi
+}
+stop_service() {
+  corePid=$(pgrep -f "easytier-core")
+  webPid=$(pgrep -f "easytier-web")
+  if [ ! -z $webPid ]; then
+    kill -9 ${webPid}
+  else
+    echo "web is stop"
+  fi
+  if [ -f "${PRIVATE_DEPLOYMENT}" ]; then
+    ${CADDY_BIN} stop
+  fi
+  if [ ! -z $corePid ]; then
+    kill -9 ${corePid}
+  else
+    echo "core is stop"
+  fi
+}
+# 更新
+download_and_install() {
+  local download_url=$1
+  local app_name=$2
+
+  if [ ! -d "${ETPATH}/tmp" ]; then
+    mkdir -p "${ETPATH}/tmp"
+  fi
+
+  # 下载
+  $busybox wget -O "${ETPATH}/tmp/${app_name}" "$download_url"
+  # 判断是否下载成功，如果成功则进行解压并移动到 /data/adb/modules/easytierForKSU/bin/
+  if [ $? -ne 0 ]; then
+    {
+      echo "Failed to download $app_name binary."
+      exit 1
+    }
+  else
+    # 解压
+    if [ "${app_name}" = "caddy" ]; then
+      $busybox tar -zxvf "${ETPATH}/tmp/${app_name}" -C "${ETPATH}/tmp/"
+      mv -f "${ETPATH}/tmp/${app_name}" "${ETPATH}/bin/"
+    elif [ "${app_name}" = "easytier" ]; then
+      $busybox unzip "${ETPATH}/tmp/${app_name}" -D "${ETPATH}/tmp/"
+      mv -f "${ETPATH}/tmp/easytier-linux-*/*" "${ETPATH}/bin/"
+    else
+      {
+        echo "Unknown app name: $app_name"
+        exit 1
+      }
+    fi
+    # 删除临时文件夹的内容
+    rm -rf ${ETPATH}/tmp/*
+    chmod +x "${ETPATH}/bin/*"
+    echo "$app_name updated successfully."
+  fi
+}
 # =========================== main ===========================
 case $1 in
-local)
-  shift
-  case $1 in
-  status)
-    local_status
-    ;;
-  service)
-    shift
-    local_service $1
-    ;;
-  network)
-    shift
-    action=$1
-    networkid=$2
-    bodydata=$3
-    if [ -z "${bodydata}" ]; then
-      bodydata="{}"
-    fi
-    if [ ! -z "${networkid}" ]; then
-      networkid='/'"${networkid}"
-    fi
-    case $action in
-    list)
-      local_networks "GET" "${bodydata}" ${networkid}
-      ;;
-    leave)
-      local_networks "DELETE" "${bodydata}" ${networkid}
-      ;;
-    join)
-      local_networks "POST" "${bodydata}" ${networkid}
-      ;;
-    esac
-    ;;
-  peer)
-    local_peer
-    ;;
-  firewall)
-    shift
-    local_firewall $1
-    ;;
-  router)
-    shift
-    local_router $@
-    ;;
-  orbit)
-    shift
-    local_orbit $@
-    ;;
-  esac
+status)
+  status_service
   ;;
-central)
-  check_apiToken
-  shift
-  case $1 in
-  status)
-    remote_status
-    ;;
-  network)
-    shift
-    action=$1
-    networkid=$2
-    bodydata=$3
-    if [ -z "${bodydata}" ]; then
-      bodydata="{}"
-    fi
-    if [ ! -z "${networkid}" ]; then
-      networkid='/'"${networkid}"
-    fi
-    case $action in
-    list)
-      api_networks "GET" "${bodydata}" ${networkid}
-      ;;
-    remove)
-      api_networks "DELETE" "${bodydata}" ${networkid}
-      ;;
-    add)
-      api_networks "POST" "${bodydata}" ""
-      ;;
-    modify)
-      api_networks "POST" "${bodydata}" ${networkid}
-      ;;
-    esac
-    ;;
-  member)
-    shift
-    action=$1
-    networkid=$2
-    memberID=$3
-    bodydata=$4
-    if [ -z "${bodydata}" ]; then
-      bodydata="{}"
-    fi
-    if [ ! -z "${memberID}" ]; then
-      memberID='/'"${memberID}"
-    fi
-    case $action in
-    list)
-      api_members "GET" ${networkid} ${memberID}
-      ;;
-    remove)
-      api_members "DELETE" ${networkid} ${memberID}
-      ;;
-    modify)
-      api_members "POST" ${networkid} ${memberID} "${bodydata}"
-      ;;
-    esac
-    ;;
-  esac
+start)
+  start_service
   ;;
-apiToken)
+stop)
+  stop_service
+  ;;
+restart)
+  stop_service
+  start_service
+  ;;
+update)
   shift
-  action=$1
-  key=$2
-  case $action in
-  show)
-    check_apiToken
-    echo "${apiToken}"
-    ;;
-  update)
-    echo "${key}" >${TOKENAUTH}
-    echo "done"
-    ;;
-  esac
+  type=$1
+  if [ -z $type ]; then
+    {
+      echo "update type is empty,support [caddy,easytier]" 1>&2
+      exit 1
+    }
+  elif [ "$type" = "caddy"]; then
+    # 从github获取最新版 caddy 版本号，并下载
+    if [ -f "${CADDY_BIN}" ]; then
+      ${CADDY_BIN} upgrade
+    else
+      echo "caddy is not exist, download it"
+      # https://github.com/caddyserver/caddy/releases/download/v2.9.1/caddy_2.9.1_linux_arm64.tar.gz.sig
+      app_latest_version=$(wget --no-check-certificate -qO- "https://api.github.com/repos/caddyserver/caddy/releases/latest" | grep "tag_name" | grep -oE "[0-9.]*" | head -1)
+      app_download_link="https://github.com/caddyserver/caddy/releases/download/${app_latest_version}/caddy_${app_latest_version#*v}_linux_${ARCH}.tar.gz"
+      download_and_install ${app_download_link} caddy
+    fi
+  elif [ "$type" = "easytier"]; then
+    # 更新easyTier
+    # 从github获取最新版 EasyTier 版本号，并下载
+    # https://github.com/EasyTier/EasyTier/releases/download/v2.2.4/easytier-linux-aarch64-v2.2.4.zip
+    app_latest_version=$(wget --no-check-certificate -qO- "https://api.github.com/repos/EasyTier/EasyTier/releases/latest" | grep "tag_name" | grep -oE "[0-9.]*" | head -1)
+    app_download_link="https://github.com/EasyTier/EasyTier/releases/download/${app_latest_version}/easytier-linux-${ARCH}-${app_latest_version}.zip"
+    download_and_install ${app_download_link} easytier
+  else
+    {
+      echo "update type is error,support [caddy,easytier]"
+      exit 1
+    }
+  fi
   ;;
 *)
   help

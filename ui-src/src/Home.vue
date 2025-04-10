@@ -170,7 +170,7 @@ const props = defineProps({
 //接收父组件传来的值
 console.info(`theme:${props.theme}`)
 import { onMounted, ref, computed } from 'vue';
-import { MODDIR, ETPATH, execCmd, getCorePath, isValidIpv4Subnet, isValidPort, isEmpty, logDir, saveFile } from './tools'
+import { MODDIR, ETPATH, execCmd, spawnCmdWithCallback,execCmdWithCallback,getCorePath, getWebPath, isValidIpv4Subnet, isValidPort, isEmpty, logDir, saveFile, readFile } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
 import { Codemirror } from "vue-codemirror";
@@ -228,7 +228,6 @@ const commandObj = ref({
   'tunName': '',
   'advance': [],
   'conf': `instance_name = "default"
-instance_id = "f9f05421-7c6b-47d6-a67d-4d58d49f51d8"
 dhcp = true
 listeners = []
 exit_nodes = []
@@ -251,8 +250,8 @@ dir = "${logDir}"
   'webServer': '',
   'privateDeployment': false,
   'listenIPv6': false,
-  'webListenProtocol': 'TCP',
-  'webListenPort': 11010,
+  'webListenProtocol': 'UDP',
+  'webListenPort': 22020,
   'webRestfulPort': 11211
 
 });
@@ -294,11 +293,6 @@ const textMap = {
       "title": t('network.disable_p2p'),
       "label": "禁用P2P通信，只通过-p指定的节点转发数据包"
     },
-    // {
-    //   "name": "listenIPv6",
-    //   "title": t('network.listenIPv6'),
-    //   "label": "同时监听IPv6"
-    // },
     {
       "name": "enableKCPProxy",
       "title": t('network.enable_kcp_proxy'),
@@ -341,9 +335,8 @@ const textMap = {
 const checkAllChange = (val) => {
   commandObj.value.advance = checked.value;
 }
-
+//填充参数
 const fillOptions = () => {
-  console.info('填充参数')
   for (const key in textMap) {
     const obj = textMap[key];
     for (const k in obj) {
@@ -427,9 +420,7 @@ const updateListenPort = (value) => {
   console.info('端口回调')
   if (commandObj.value.listen == 'false') { }
   let conf = tomlParse(commandObj.value.conf);
-  // if(typeof(conf.listeners)=="undefined"){
   conf.listeners = [];
-  // }
   if (isValidPort(commandObj.value.wssPort)) {
     conf.listeners.push(`wss://0.0.0.0:${commandObj.value.wssPort}`)
   }
@@ -445,11 +436,11 @@ const updateListenPort = (value) => {
   if (isValidPort(commandObj.value.wgPort)) {
     conf.listeners.push(`wg://0.0.0.0:${commandObj.value.wgPort}`)
   }
-  debugger
   commandObj.value.conf = tomlStringify(conf);
 }
 onMounted(() => {
   console.info(`服务状态：${moduleInfo.serviceState}`)
+  readFile()
   // init()
   fillOptions();
 })
@@ -544,7 +535,6 @@ const checkContent = (runMode) => {
     }
 
     //子网代理
-    // TODO 子网代理支持多个网段的，这里需要改
     if (commandObj.value.proxy_cidrs.length > 1) {
       for (let i = 0; i < commandObj.value.proxy_cidrs.length; i++) {
         if (isValidIpv4Subnet(commandObj.value.proxy_cidrs[i])) {
@@ -559,7 +549,6 @@ const checkContent = (runMode) => {
       }
     }
     //监听端口
-    //TODO 监听端口的时候需要给出自定义端口选项
     if (commandObj.value.listen === 'true') {
       // 如果启用监听，使用默认端口
       addPortToCommandArgs(commandArgs, commandObj.value.tcpPort, 'tcp');
@@ -647,7 +636,6 @@ const checkContent = (runMode) => {
       });
       return;
     }
-
     saveFile(commandObj.value.conf, `${MODDIR}/config.toml`);
     commandArgs += ` -c ${ETPATH}/config.toml `
   } else if (runMode === 'web') {
@@ -660,7 +648,14 @@ const checkContent = (runMode) => {
     }
     commandArgs += ` -w ${commandObj.value.webServer} `
     if (commandObj.value.privateDeployment) {
-      commandArgs += ` --private-deployment `
+      if (isValidPort(commandObj.value.webListenPort)) {
+        commandObj.value.webListenPort = 22020;
+      }
+      if (isValidPort(commandObj.value.webRestfulPort)) {
+        commandObj.value.webListenPort = 11211;
+      }
+      let webArgs = `${getWebPath()} --file-log-level ${commandObj.value.logLevel} --console-log-level ${commandObj.value.logLevel} --file-log-dir ${logDir} --config-server-port ${commandObj.value.webListenPort} --api-server-port ${commandObj.value.webRestfulPort} --config-server-protocol=${commandObj.value.webListenProtocol.toLowerCase()} `
+      commandArgs = `${webArgs} && ${commandArgs}`
     }
   } else {
     showNotify({
@@ -674,23 +669,12 @@ const checkContent = (runMode) => {
 };// 启动服务
 const startService = () => {
   const cmdLine = checkContent(commandObj.value.runMode);
-  console.info(cmdLine)
-  moduleInfo.serviceState = !moduleInfo.serviceState;
-  switch (commandObj.value.runMode) {
-    case "command":
-      // 核心代码
-      let cmd = `${getCorePath()} --network-name ${commandObj.value.networkName} --network-secret ${commandObj.value.networkPassWd} `
-      // DHCP服务
-      if (dhcpEnable.value == true) {
-        cmd += "-d"
-      }
-      break;
-    case "file":
-      break;
-    case "web":
-      break;
-    default:
-      break;
+  if (cmdLine) {
+    console.info(`启动命令：${cmdLine}`)
+    saveFile(JSON.stringify(commandObj.value), `${ETPATH}/config.json`);
+    saveFile(cmdLine, `${ETPATH}/cmdLine`);
+    moduleInfo.serviceState = !moduleInfo.serviceState;
+    //TODO 调用启动脚本
   }
 }
 
@@ -702,21 +686,22 @@ const init = () => {
     forbidClick: true,
     loadingType: 'spinner',
   });
-  setTimeout(() => {
-    execCmd(`sh ${MODDIR}/zerotier.sh status`).then(v => {
-      const statusObj = JSON.parse(v);
-      if (statusObj.enable == "") {
-        ready.value = false;
-        moduleInfo.changeServiceState(false);
-        // startServiceConfirm()
-      } else {
-        ready.value = true;
-        moduleInfo.changeServiceState(true);
-        // getList();
+  try {
+    execCmdWithCallback({
+      cmd: `sh ${MODDIR}/api.sh status`,
+      onSuccess: (data) => {
+        const configFile = JSON.parse(readFile(`${ETPATH}/config.json`))
+        commandObj.value = configFile;
+      }, onError: (data) => {
       }
-    });
+    })
+    
+  } catch (error) {
+    console.error('配置文件加载异常', error)
+  }finally{
     closeToast()
-  }, 1000)
+  }
+
 }
 
 

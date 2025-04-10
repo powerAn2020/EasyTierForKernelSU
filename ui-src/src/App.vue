@@ -20,7 +20,7 @@
     <!-- <div style="height: 5rem;"></div> -->
     <div style="height: 2.8rem;"></div>
     <router-view v-slot="{ Component }">
-      <component ref="routerViewRef" :is="Component" :theme="theme" />
+      <component ref="routerViewRef" :is="Component"  />
     </router-view>
     <div style="height: 0.1rem;padding-bottom:50px;"></div>
     <van-tabbar @change="onChangeTabbar" safe-area-inset-bottom v-model="active">
@@ -85,17 +85,25 @@ const switchLocale = (language) => {
 }
 
 const initTheme = () => {
-  execCmd('settings get secure ui_night_mode').then(v => {
-    // 0 表示跟随系统设置?即当前模式与系统设置的主题模式相匹配.
-    // 1 表示开启了 Dark Mode（夜间模式）.
-    // 2 表示关闭了 Dark Mode（白天模式）.
-    if (v == '1') {
+  //js匹配主题颜色
+  var isLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  if (isLight) {
       theme.value = true;
     } else {
       theme.value = false;
     }
     localStorage.setItem('EasytierForKSU.theme', theme.value)
-  });
+  // execCmd('settings get secure ui_night_mode').then(v => {
+  //   // 0 表示跟随系统设置?即当前模式与系统设置的主题模式相匹配.
+  //   // 1 表示开启了 Dark Mode（夜间模式）.
+  //   // 2 表示关闭了 Dark Mode（白天模式）.
+  //   if (v == '1') {
+  //     theme.value = true;
+  //   } else {
+  //     theme.value = false;
+  //   }
+  //   localStorage.setItem('EasytierForKSU.theme', theme.value)
+  // });
   const cacheTheme = localStorage.getItem('EasytierForKSU.theme');
   if (!isEmpty(cacheTheme)) {
     theme.value = JSON.parse(cacheTheme);
