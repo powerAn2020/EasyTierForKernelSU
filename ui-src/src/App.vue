@@ -18,11 +18,11 @@
       </template>
     </van-nav-bar>
     <!-- <div style="height: 5rem;"></div> -->
-    <div style="height: 2.8rem;"></div>
+    <div style="height: 2.8rem;padding-top:10px;"></div>
     <router-view v-slot="{ Component }">
       <component ref="routerViewRef" :is="Component"  />
     </router-view>
-    <div style="height: 0.1rem;padding-bottom:50px;"></div>
+    <div style="height: 0.2rem;padding-bottom:50px;"></div>
     <van-tabbar @change="onChangeTabbar" safe-area-inset-bottom v-model="active">
       <van-tabbar-item icon="home-o">{{ t('common.dash') }}</van-tabbar-item>
       <van-tabbar-item icon="friends-o">{{ t('common.peers') }}</van-tabbar-item>

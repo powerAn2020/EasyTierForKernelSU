@@ -1,49 +1,23 @@
 <template>
-  <van-cell-group inset title="peer">
-    <van-card v-for="(item, index) in tableData" :key="index" centered :title="item.hostname">
-      <!-- <template #price>
-          ⬆{{ item.tx_bytes }} ⬇{{ item.rx_bytes }}
-        </template> -->
-      <template #tags>
-        <van-space direction="vertical" fill>
-          <van-row>
-            <van-col><van-tag plain type="primary">IP：{{ item.ipv4 }}</van-tag></van-col>
-          </van-row>
-          <van-row :gutter="[20, 20]" justify="space-between">
-            <van-col>
-              <van-tag plain type="primary">穿透方式：{{ item.cost }}</van-tag>
-            </van-col>
-            <van-col>
-              <van-tag plain type="primary">Nat类型：{{ item.nat_type }}</van-tag>
-            </van-col>
-          </van-row>
-          <van-row :gutter="[20, 20]" justify="space-between">
-            <van-col>
-              <van-tag plain type="primary">隧道类型：{{ item.tunnel_proto }}</van-tag>
-            </van-col>
-            <van-col>
-              <van-tag plain type="primary">版本：{{ item.version }}</van-tag>
-            </van-col>
-          </van-row>
-          <van-row :gutter="[20, 20]" justify="space-between">
-            <van-col>
-              <van-tag plain type="primary">延迟：{{ item.lat_ms }}</van-tag>
-            </van-col>
-            <van-col>
-              <van-tag plain type="primary">丢包率：{{ item.loss_rate }}</van-tag>
-            </van-col>
-          </van-row>
-        </van-space>
-      </template>
-      <template #footer>
-        <van-button type="success" size="small" disabled>
-          ⬆{{ item.tx_bytes }}
-        </van-button>
-        <van-button type="danger" size="small" disabled>
-          ⬇{{ item.rx_bytes }}
-        </van-button>
-      </template>
-    </van-card>
+
+  <van-row justify="center">
+    <van-col >
+      <van-checkbox-group v-model="checked" direction="horizontal">
+        <van-checkbox name="moreInfo">详细模式</van-checkbox>
+        <van-checkbox name="autoRefesh">自动刷新</van-checkbox>
+      </van-checkbox-group>
+    </van-col>
+  </van-row>
+  <van-cell-group inset :title="item.hostname" v-for="(item, index) in tableData" :key="index">
+    <van-cell title="IP" :value="item.ipv4" />
+    <van-cell title="⬆上行流量" :value="item.tx_bytes" />
+    <van-cell title="⬇下行流量" :value="item.rx_bytes" />
+    <van-cell title="穿透方式" :value="item.cost" v-show="show"/>
+    <van-cell title="Nat类型" :value="item.nat_type" v-show="show"/>
+    <van-cell title="隧道类型" :value="item.tunnel_proto" v-show="show"/>
+    <van-cell title="丢包率" :value="item.loss_rate" v-show="show"/>
+    <van-cell title="延迟" :value="item.lat_ms" v-show="show"/>
+    <van-cell title="版本" :value="item.version" v-show="show"/>
   </van-cell-group>
 
 </template>
@@ -60,9 +34,9 @@ const ready = ref(false);
 const show = ref(false);
 const moonId = ref('');
 const loading = ref(false);
-const activeNames = ref(null);
 
 const items = reactive([])
+const checked = ref([])
 
 const startService = () => {
   execCmd(`rm ${ETPATH}/state/disable`).then(v => {
@@ -153,6 +127,23 @@ const getList = () => {
     items.push(...JSON.parse(v));
   })
 }
+let interval;
+watch(() => checked.value, (New, Old) => {
+  if(New.includes('moreInfo') && !Old.includes('moreInfo')){
+    show.value=true
+  }else if(!New.includes('moreInfo')){
+    show.value=false
+  }
+  // 设置定时任务，每秒刷新一次，如果没有选中自动刷新则取消定时任务，如果重复选中则取消上一次任务重新启用
+  if(New.includes('autoRefesh') && !Old.includes('autoRefesh')){
+    interval=setInterval(()=>{
+      console.info("定时刷新")
+    },1000)
+  }else if(!New.includes('autoRefesh')){
+    clearInterval(interval);
+  }
+  console.log(`新值:${New} ——— 老值:${Old}`)
+})
 const init = () => {
   console.info('init')
   showLoadingToast({

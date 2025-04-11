@@ -1,5 +1,5 @@
 #!/sbin/sh
-
+SKIPUNZIP=0
 # ASH_STANDALONE=1
 ETPATH=/data/adb/easytier
 ### INSTALLATION ###
@@ -17,7 +17,7 @@ fi
 ui_print "OS ARCH is $ARCH"
 # ARCH (string): 设备的 CPU 架构。值为 arm 、arm64 、x86 或 x64
 # 缓存到prop中用于后续更新判断
-echo "arch=${ARCH}"
+echo "arch=${ARCH}" >>$MODPATH/module.prop
 
 # check version
 if [ "$KSU" = true ]; then
@@ -34,6 +34,6 @@ if [ ! -d "${ETPATH}" ]; then
 fi
 
 ui_print "- Setting permissions"
-set_perm_recursive $MODPATH 0 0 0755 0644
-set_perm_recursive ${ETPATH} 0 0 0755 0644
+set_perm_recursive $MODPATH 0 0 0755 0755
+set_perm_recursive ${ETPATH}/bin 0 0 0755 0755
 ui_print "- Installation is complete, reboot your device"
