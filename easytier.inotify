@@ -2,7 +2,7 @@
 MODDIR=${0%/*}
 now=$(date +"%I:%M %p")
 
-ETPATH=/data/adb/easytierForKSU
+ETLogPATH=/data/adb/easytierForKSU/logs/
 
 events="$1"
 monitor_dir="$2"
@@ -10,11 +10,11 @@ monitor_file="$3"
 
 service_control() {
   if [ "${monitor_file}" = "disable" ]; then
-    echo "${events} - ${monitor_dir} - ${monitor_file}" >>${ETPATH}/inotify.log
+    echo "${events} - ${monitor_dir} - ${monitor_file}" >>${ETLogPATH}/inotify.log
     if [ "${events}" = "d" ]; then
-      ${MODDIR}/api.sh start >>${ETPATH}/inotify.log
+      ${MODDIR}/api.sh start >>${ETLogPATH}/inotify.log
     elif [ "${events}" = "n" ]; then
-      ${MODDIR}/api.sh stop >>${ETPATH}/inotify.log
+      ${MODDIR}/api.sh stop >>${ETLogPATH}/inotify.log
     fi
   fi
 }

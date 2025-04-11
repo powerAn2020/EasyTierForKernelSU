@@ -1,0 +1,13 @@
+:5566 {
+	root * /data/adb/easytierForKSU/html
+	file_server
+	header {
+		Access-Control-Allow-Origin *
+		Access-Control-Allow-Methods *
+		Access-Control-Allow-Headers *
+	}
+
+	log {
+		output file /data/adb/easytierForKSU/logs/caddy.log
+	}
+}

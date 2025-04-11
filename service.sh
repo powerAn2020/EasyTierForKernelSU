@@ -13,14 +13,13 @@ else
   busybox="/data/adb/magisk/busybox"
 fi
 
-ETPATH=/data/adb/easytier
 MANUAL=${ETPATH}/MANUAL
 (
   until [ $(getprop init.svc.bootanim) = "stopped" ]; do
     sleep 10
   done
 
-  ${MODDIR}/easytier.sh inotifyd
+  ${MODDIR}/api.sh inotifyd
   # inotifyd "${MODDIR}/build.inotify" "/sdcard/Download/dist" &
   if [ ! -f "${MANUAL}" ]; then
     sh ${MODDIR}/api.sh start

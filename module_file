@@ -1,0 +1,10 @@
+META-INF
+webroot
+api.sh
+customize.sh
+module.prop
+README.md
+service.sh
+uninstall.sh
+easytier.inotify
+Caddyfile

@@ -131,7 +131,7 @@ export const isValidURLPort = (url) => {
 
   return regex.test(url);
 }
-export const logDir = ETPATH + '/log'
+export const logDir = ETPATH + '/logs'
 
 /**
  * 

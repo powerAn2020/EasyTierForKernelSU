@@ -33,11 +33,13 @@ CORE_BIN=${ETPATH}/bin/easytier-core
 CLI_BIN=${ETPATH}/bin/easytier-cli
 WEB_BIN=${ETPATH}/bin/easytier-web
 CADDY_BIN=${ETPATH}/bin/caddy
+CADDY_CONF=${ETPATH}/conf/Caddyfile
 
 MANUAL=${ETPATH}/MANUAL
 KEEP_ON_UNINSTALL=${ETPATH}/KEEP_ON_UNINSTALL
 PRIVATE_DEPLOYMENT=${ETPATH}/PRIVATE_DEPLOYMENT
 CMDLINE=${ETPATH}/CMDLINE
+current_time=$(date +"%I:%M %P")
 
 # apiToken=$(grep -v '^[[:space:]]*$' $TOKENAUTH)
 
@@ -89,7 +91,8 @@ start_service() {
     fi
     # 私有化部署启动caddy
     if [ -f "${PRIVATE_DEPLOYMENT}" ]; then
-      ${CADDY_BIN} start
+      # 监听配置文件变化并自动重启
+      ${CADDY_BIN} --config ${ETPATH}/conf/Caddyfile --watch start
     fi
 
     sed -Ei "s/^description=(\[.*][[:space:]]*)?/description=[ $current_time | ✔︎ service is running ] /g" $MODDIR/module.prop
@@ -151,6 +154,18 @@ download_and_install() {
     echo "$app_name updated successfully."
   fi
 }
+start_inotifyd() {
+  PIDs=$(pgrep -f inotifyd)
+  for PID in "${PIDs[@]}"; do
+    if grep -q "easytier.inotify" "/proc/$PID/cmdline"; then
+      kill -9 "$PID"
+    fi
+  done
+  echo "inotifyd ${ETPATH}/state"
+  sed -Ei "s/^description=(\[.*][[:space:]]*)?/description=[ $current_time | inotifyd is running ] /g" $MODDIR/module.prop
+  inotifyd "${MODDIR}/easytier.inotify" "${ETPATH}/state" >>/dev/null 2>&1 &
+}
+
 # =========================== main ===========================
 case $1 in
 status)
@@ -166,9 +181,14 @@ restart)
   stop_service
   start_service
   ;;
-update)
+caddyport)
   shift
-  type=$1
+  local target_port=$1
+  sed -i "s/:[0-9]\+/:$target_port/g" ${CADDY_CONF}
+  ;;
+upgrade)
+  shift
+  local type=$1
   if [ -z $type ]; then
     {
       echo "update type is empty,support [caddy,easytier]" 1>&2
@@ -198,6 +218,9 @@ update)
       exit 1
     }
   fi
+  ;;
+inotifyd)
+  start_inotifyd
   ;;
 *)
   help
