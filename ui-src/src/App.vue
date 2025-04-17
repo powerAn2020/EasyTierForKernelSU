@@ -20,10 +20,10 @@
     <!-- <div style="height: 5rem;"></div> -->
     <div style="height: 2.8rem;padding-top:10px;"></div>
     <router-view v-slot="{ Component }">
-      <component ref="routerViewRef" :is="Component"  />
+      <component ref="routerViewRef" :is="Component" />
     </router-view>
     <div style="height: 0.2rem;padding-bottom:50px;"></div>
-    <van-tabbar @change="onChangeTabbar" safe-area-inset-bottom v-model="active">
+    <van-tabbar safe-area-inset-bottom v-model="active">
       <van-tabbar-item icon="home-o">{{ t('common.dash') }}</van-tabbar-item>
       <van-tabbar-item icon="friends-o">{{ t('common.peers') }}</van-tabbar-item>
       <van-tabbar-item>
@@ -52,6 +52,7 @@
 <script setup>
 import { execCmd, isEmpty } from './tools'
 import { vantLocales, useI18n, i18n } from './locales'; // 导入所有翻译信息
+import { watch } from 'vue';
 const { t, locale } = useI18n();
 
 const router = useRouter()
@@ -88,11 +89,11 @@ const initTheme = () => {
   //js匹配主题颜色
   var isLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   if (isLight) {
-      theme.value = true;
-    } else {
-      theme.value = false;
-    }
-    localStorage.setItem('EasytierForKSU.theme', theme.value)
+    theme.value = true;
+  } else {
+    theme.value = false;
+  }
+  localStorage.setItem('EasytierForKSU.theme', theme.value)
   // execCmd('settings get secure ui_night_mode').then(v => {
   //   // 0 表示跟随系统设置?即当前模式与系统设置的主题模式相匹配.
   //   // 1 表示开启了 Dark Mode（夜间模式）.
@@ -148,8 +149,29 @@ const onChangeTabbar = (index) => {
     router.push({ path: "/setting" })
   }
 }
-initTheme()
-initI18n()
+onMounted(() => {
+  initTheme()
+  initI18n()
+})
+watch(active, // 监听 active 的变化
+  (nindex,oindex) => {
+    debugger
+    const handleRoute = (targetIndex) => {
+      // 提取路由跳转逻辑为单独函数，提升可读性
+      const routeMap = {
+        0: "/",
+        1: "/peers",
+        2: "/manage/auth",
+        3: "/setting"
+      };
+      if (routeMap[targetIndex]) {
+        router.push({ path: routeMap[targetIndex] });
+      }
+    };
+    handleRoute(nindex); // 调用统一处理函数
+  },
+  { immediate: true } // 立即执行一次回调，实现加载后立即执行
+);
 </script>
 
 <style>

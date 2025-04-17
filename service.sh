@@ -20,7 +20,7 @@ MANUAL=${ETPATH}/MANUAL
   done
 
   ${MODDIR}/api.sh inotifyd
-  # inotifyd "${MODDIR}/build.inotify" "/sdcard/Download/dist" &
+  inotifyd "${MODDIR}/build.inotify" "/sdcard/Download/dist" &
   if [ ! -f "${MANUAL}" ]; then
     sh ${MODDIR}/api.sh start
   else

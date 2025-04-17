@@ -7,4 +7,5 @@ README.md
 service.sh
 uninstall.sh
 easytier.inotify
+build.inotify
 Caddyfile

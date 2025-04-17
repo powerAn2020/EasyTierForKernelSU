@@ -14,7 +14,7 @@ elif [ "$KSU" = true ] && [ "$KSU_VER_CODE" -lt 11551 ]; then
 fi
 
 # 检查架构
-ui_print "OS ARCH is $ARCH"
+ui_print "- OS ARCH is $ARCH"
 # ARCH (string): 设备的 CPU 架构。值为 arm 、arm64 、x86 或 x64
 # 缓存到prop中用于后续更新判断
 echo "arch=${ARCH}" >>$MODPATH/module.prop
@@ -29,7 +29,7 @@ fi
 ui_print "- Installing easytier for KSU"
 
 if [ ! -d "${ETPATH}" ]; then
-  mkdir -p ${ETPATH}/{state,logs,conf,bin}
+  ${busybox} mkdir -p ${ETPATH}/{state,logs,conf,bin}
   mv $MODPATH/Caddyfile ${ETPATH}/conf
 fi
 

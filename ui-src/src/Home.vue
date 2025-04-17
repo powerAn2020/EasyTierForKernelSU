@@ -137,7 +137,6 @@
       <van-field v-model="listen" is-link readonly :label="t('network.listenPort')" placeholder="不监听"
         :disabled="moduleInfo.serviceState" @click="showPicker2 = true" />
       <div v-show="commandObj.listen == 'true'">
-
         <van-field v-model="commandObj.tcpPort" type="digit" :label="t('network.listenTCPort')" maxlength="5"
           placeholder="11010,写0不监听" :disabled="moduleInfo.serviceState" @blur="updateListenPort" />
         <van-field v-model="commandObj.udpPort" type="digit" :label="t('network.listenUDPort')" maxlength="5"
@@ -183,8 +182,6 @@ const { t } = useI18n();
 const moduleInfo = useModuleInfoStore();
 const checked = ref([]);
 const listen = ref('');
-const dhcpEnable = ref(false);
-const ready = ref(false);
 const activeNames = ref(['']);
 
 let runModeOption = [];
@@ -207,7 +204,7 @@ const runModeName = ref('');
 const compressionAlgorithm = ref('');
 const loggin = ref('');
 const commandObj = ref({
-  'runMode': 'web',
+  'runMode': 'command',
   'networkName': '',
   'networkPassWd': '',
   'dhcpEnable': true,
@@ -438,11 +435,12 @@ const updateListenPort = (value) => {
   }
   commandObj.value.conf = tomlStringify(conf);
 }
+onBeforeMount(() => {
+  init();
+})
 onMounted(() => {
   console.info(`服务状态：${moduleInfo.serviceState}`)
-  readFile()
-  // init()
-  fillOptions();
+  // readFile()
 })
 
 const onRunModeConfirm = ({ selectedValues }) => {
@@ -636,8 +634,8 @@ const checkContent = (runMode) => {
       });
       return;
     }
-    saveFile(commandObj.value.conf, `${MODDIR}/config.toml`);
-    commandArgs += ` -c ${ETPATH}/config.toml `
+    saveFile(commandObj.value.conf, `${ETPATH}/conf/config.toml`);
+    commandArgs += ` -c ${ETPATH}/conf/config.toml `
   } else if (runMode === 'web') {
     if (isEmpty(commandObj.value.webServer)) {
       showNotify({
@@ -648,10 +646,10 @@ const checkContent = (runMode) => {
     }
     commandArgs += ` -w ${commandObj.value.webServer} `
     if (commandObj.value.privateDeployment) {
-      if (isValidPort(commandObj.value.webListenPort)) {
+      if (!isValidPort(commandObj.value.webListenPort)) {
         commandObj.value.webListenPort = 22020;
       }
-      if (isValidPort(commandObj.value.webRestfulPort)) {
+      if (!isValidPort(commandObj.value.webRestfulPort)) {
         commandObj.value.webListenPort = 11211;
       }
       let webArgs = `${getWebPath()} --file-log-level ${commandObj.value.logLevel} --console-log-level ${commandObj.value.logLevel} --file-log-dir ${logDir} --config-server-port ${commandObj.value.webListenPort} --api-server-port ${commandObj.value.webRestfulPort} --config-server-protocol=${commandObj.value.webListenProtocol.toLowerCase()} `
@@ -690,12 +688,20 @@ const init = () => {
     execCmdWithCallback({
       cmd: `sh ${MODDIR}/api.sh status`,
       onSuccess: (data) => {
-        const configFile = JSON.parse(readFile(`${ETPATH}/config.json`))
-        commandObj.value = configFile;
+        console.info(data)
+        // moduleInfo.serviceState = true;
+        readFile(`${ETPATH}/config.json`).then(value => {
+          const configFile = JSON.parse(value)
+          commandObj.value = configFile;
+          fillOptions();
+        }).catch(ex => {
+          showToast(`${ex}`)
+        })
       }, onError: (data) => {
+        console.error('获取服务状态失败', data)
+        moduleInfo.serviceState = false;
       }
     })
-    
   } catch (error) {
     console.error('配置文件加载异常', error)
   }finally{

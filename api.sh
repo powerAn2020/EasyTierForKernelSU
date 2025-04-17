@@ -121,7 +121,7 @@ stop_service() {
 download_and_install() {
   local download_url=$1
   local app_name=$2
-
+  echo "download_url:$download_url"
   if [ ! -d "${ETPATH}/tmp" ]; then
     mkdir -p "${ETPATH}/tmp"
   fi
@@ -131,7 +131,7 @@ download_and_install() {
   # 判断是否下载成功，如果成功则进行解压并移动到 /data/adb/modules/easytierForKSU/bin/
   if [ $? -ne 0 ]; then
     {
-      echo "Failed to download $app_name binary."
+      echo "Failed to download $app_name binary, please manual download to /data/adb/modules/easytierForKSU/bin/."
       exit 1
     }
   else
@@ -140,7 +140,7 @@ download_and_install() {
       $busybox tar -zxvf "${ETPATH}/tmp/${app_name}" -C "${ETPATH}/tmp/"
       mv -f "${ETPATH}/tmp/${app_name}" "${ETPATH}/bin/"
     elif [ "${app_name}" = "easytier" ]; then
-      $busybox unzip "${ETPATH}/tmp/${app_name}" -D "${ETPATH}/tmp/"
+      $busybox unzip "${ETPATH}/tmp/${app_name}" -d "${ETPATH}/tmp/"
       mv -f "${ETPATH}/tmp/easytier-linux-*/*" "${ETPATH}/bin/"
     else
       {
@@ -150,6 +150,7 @@ download_and_install() {
     fi
     # 删除临时文件夹的内容
     rm -rf ${ETPATH}/tmp/*
+    which chmod
     chmod +x "${ETPATH}/bin/*"
     echo "$app_name updated successfully."
   fi
@@ -163,7 +164,7 @@ start_inotifyd() {
   done
   echo "inotifyd ${ETPATH}/state"
   sed -Ei "s/^description=(\[.*][[:space:]]*)?/description=[ $current_time | inotifyd is running ] /g" $MODDIR/module.prop
-  inotifyd "${MODDIR}/easytier.inotify" "${ETPATH}/state" >>/dev/null 2>&1 &
+  ${busybox} inotifyd "${MODDIR}/easytier.inotify" "${ETPATH}/state" >>/dev/null 2>&1 &
 }
 
 # =========================== main ===========================
@@ -194,22 +195,30 @@ upgrade)
       echo "update type is empty,support [caddy,easytier]" 1>&2
       exit 1
     }
-  elif [ "$type" = "caddy"]; then
+  elif [ "$type" = "caddy" ]; then
     # 从github获取最新版 caddy 版本号，并下载
     if [ -f "${CADDY_BIN}" ]; then
       ${CADDY_BIN} upgrade
     else
       echo "caddy is not exist, download it"
       # https://github.com/caddyserver/caddy/releases/download/v2.9.1/caddy_2.9.1_linux_arm64.tar.gz.sig
-      app_latest_version=$(wget --no-check-certificate -qO- "https://api.github.com/repos/caddyserver/caddy/releases/latest" | grep "tag_name" | grep -oE "[0-9.]*" | head -1)
+      app_latest_version=$(wget --no-check-certificate -qO- "https://api.github.com/repos/caddyserver/caddy/releases/latest" | grep "tag_name" | grep -oE "v[0-9.]*" | head -1)
+      if [ "$ARCH" = "x64" ];then
+        ARCH="amd64"
+      fi
       app_download_link="https://github.com/caddyserver/caddy/releases/download/${app_latest_version}/caddy_${app_latest_version#*v}_linux_${ARCH}.tar.gz"
       download_and_install ${app_download_link} caddy
     fi
-  elif [ "$type" = "easytier"]; then
+  elif [ "$type" = "easytier" ]; then
     # 更新easyTier
     # 从github获取最新版 EasyTier 版本号，并下载
     # https://github.com/EasyTier/EasyTier/releases/download/v2.2.4/easytier-linux-aarch64-v2.2.4.zip
-    app_latest_version=$(wget --no-check-certificate -qO- "https://api.github.com/repos/EasyTier/EasyTier/releases/latest" | grep "tag_name" | grep -oE "[0-9.]*" | head -1)
+    app_latest_version=$(wget --no-check-certificate -qO- "https://api.github.com/repos/EasyTier/EasyTier/releases/latest" | grep "tag_name" | grep -oE "v[0-9.]*" | head -1)
+    if [ "$ARCH" = "x64" ];then
+      ARCH="x86_64"
+    elif [ "" = "arm64" ];then
+      ARCH="aarch64"
+    fi
     app_download_link="https://github.com/EasyTier/EasyTier/releases/download/${app_latest_version}/easytier-linux-${ARCH}-${app_latest_version}.zip"
     download_and_install ${app_download_link} easytier
   else

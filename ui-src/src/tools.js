@@ -1,6 +1,6 @@
 import { exec, spawn } from 'kernelsu';
 import { Buffer } from 'buffer'
-export const MODDIR = '/data/adb/modules/EasytierForKSU'
+export const MODDIR = '/data/adb/modules/easytierForKSU'
 export const ETPATH = '/data/adb/easytier'
 
 export const execCmd = async (cmd) => {

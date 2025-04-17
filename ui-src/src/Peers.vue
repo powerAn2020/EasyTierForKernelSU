@@ -24,7 +24,7 @@
 
 <script setup>
 // import { reactive, ref } from 'vue';
-import { ETPATH, MODDIR, execCmd, } from './tools'
+import { ETPATH, MODDIR, execCmd } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
 const { t } = useI18n();
@@ -38,14 +38,6 @@ const loading = ref(false);
 const items = reactive([])
 const checked = ref([])
 
-const startService = () => {
-  execCmd(`rm ${ETPATH}/state/disable`).then(v => {
-    setTimeout(() => {
-      ready.value = true;
-      window.location.reload();
-    }, 50);
-  })
-}
 const tableData = [
   {
     ipv4: '10.0.0.3/24',
@@ -142,8 +134,12 @@ watch(() => checked.value, (New, Old) => {
   }else if(!New.includes('autoRefesh')){
     clearInterval(interval);
   }
-  console.log(`新值:${New} ——— 老值:${Old}`)
+  console.debug(`新值:${New} ——— 老值:${Old}`)
 })
+onBeforeUnmount(() => {
+  console.debug(`销毁页面->清除计时器`)
+  clearInterval(interval);
+});
 const init = () => {
   console.info('init')
   showLoadingToast({
@@ -160,7 +156,7 @@ const init = () => {
     leaveNetwork = JSON.parse(leaveNetwork);
   }
   setTimeout(() => {
-    execCmd(`sh ${MODDIR}/zerotier.sh status`).then(v => {
+    execCmd(`sh ${ETPATH}/zerotier.sh status`).then(v => {
       const statusObj = JSON.parse(v);
       if (statusObj.enable == "") {
         ready.value = false;
@@ -175,6 +171,6 @@ const init = () => {
     closeToast()
   }, 1000)
 }
-init()
+// init()
 
 </script>
