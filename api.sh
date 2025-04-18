@@ -48,31 +48,31 @@ help() {
 }
 
 status_service() {
-  // core进程号
+  # core进程号
   corePid=$(pgrep -f "easytier-core")
-  // 卸载保留数据
+  # 卸载保留数据
   uninstallKeep=true
   if [ ! -f "${KEEP_ON_UNINSTALL}" ]; then
     uninstallKeep=false
   fi
-  // 开机自启
+  # 开机自启
   autoStart=false
   if [ ! -f "${MANUAL}" ]; then
     autoStart=true
   fi
-  // 私有化web部署
+  # 私有化web部署
   privateDeployment=false
   if [ -f "${PRIVATE_DEPLOYMENT}" ]; then
-    // web进程号
+    # web进程号
     privateDeployment=$(pgrep -f "easytier-web")
   fi
-  // 命令行输出
+  # 命令行输出
   cliStatus=$(${ETPATH}/bin/easytier-core -V)
   if [ $? != 0 ]; then
     cliStatus=''
   fi
-  // 构建返回数据
-  data='{"enable":"'${corePid}'","privateDeployment":"'${privateDeployment}'","autoStart":'${autoStart}',"uninstallKeep":'${uninstallKeep}',"version":"'${cliStatus}'"}'
+  # 构建返回数据
+  data="{\"enable\": \"$corePid\", \"privateDeployment\": \"$privateDeployment\", \"autoStart\": $autoStart, \"uninstallKeep\": $uninstallKeep, \"version\": \"$version\"}"
   echo $data
 }
 start_service() {
@@ -138,10 +138,10 @@ download_and_install() {
     # 解压
     if [ "${app_name}" = "caddy" ]; then
       $busybox tar -zxvf "${ETPATH}/tmp/${app_name}" -C "${ETPATH}/tmp/"
-      mv -f "${ETPATH}/tmp/${app_name}" "${ETPATH}/bin/"
+      $busybox mv -f ${ETPATH}/tmp/${app_name} "${ETPATH}/bin/"
     elif [ "${app_name}" = "easytier" ]; then
       $busybox unzip "${ETPATH}/tmp/${app_name}" -d "${ETPATH}/tmp/"
-      mv -f "${ETPATH}/tmp/easytier-linux-*/*" "${ETPATH}/bin/"
+      $busybox mv -f ${ETPATH}/tmp/easytier-*/* "${ETPATH}/bin/"
     else
       {
         echo "Unknown app name: $app_name"
@@ -150,8 +150,7 @@ download_and_install() {
     fi
     # 删除临时文件夹的内容
     rm -rf ${ETPATH}/tmp/*
-    which chmod
-    chmod +x "${ETPATH}/bin/*"
+    chmod -R +x ${ETPATH}/bin/
     echo "$app_name updated successfully."
   fi
 }

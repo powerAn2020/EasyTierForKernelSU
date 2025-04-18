@@ -670,9 +670,13 @@ const startService = () => {
   if (cmdLine) {
     console.info(`启动命令：${cmdLine}`)
     saveFile(JSON.stringify(commandObj.value), `${ETPATH}/config.json`);
-    saveFile(cmdLine, `${ETPATH}/cmdLine`);
+    saveFile(cmdLine, `${ETPATH}/CMDLINE`);
     moduleInfo.serviceState = !moduleInfo.serviceState;
-    //TODO 调用启动脚本
+    if(moduleInfo.serviceState){
+      execCmd(`rm -f ${ETPATH}/state/disable`)
+    }else{
+      execCmd(`touch ${ETPATH}/state/disable`)
+    }
   }
 }
 
