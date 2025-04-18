@@ -155,7 +155,6 @@ onMounted(() => {
 })
 watch(active, // 监听 active 的变化
   (nindex,oindex) => {
-    debugger
     const handleRoute = (targetIndex) => {
       // 提取路由跳转逻辑为单独函数，提升可读性
       const routeMap = {

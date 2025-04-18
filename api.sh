@@ -110,6 +110,7 @@ stop_service() {
   fi
   if [ -f "${PRIVATE_DEPLOYMENT}" ]; then
     ${CADDY_BIN} stop
+    echo "caddy is stop"
   fi
   if [ ! -z $corePid ]; then
     kill -9 ${corePid}
@@ -128,10 +129,10 @@ download_and_install() {
 
   # 下载
   $busybox wget -O "${ETPATH}/tmp/${app_name}" "$download_url"
-  # 判断是否下载成功，如果成功则进行解压并移动到 /data/adb/modules/easytierForKSU/bin/
+  # 判断是否下载成功，如果成功则进行解压并移动到 ${ETPATH}/bin/
   if [ $? -ne 0 ]; then
     {
-      echo "Failed to download $app_name binary, please manual download to /data/adb/modules/easytierForKSU/bin/."
+      echo "Failed to download $app_name binary, please manual download to ${ETPATH}/bin/."
       exit 1
     }
   else

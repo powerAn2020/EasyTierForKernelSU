@@ -169,7 +169,7 @@ const props = defineProps({
 //接收父组件传来的值
 console.info(`theme:${props.theme}`)
 import { onMounted, ref, computed } from 'vue';
-import { MODDIR, ETPATH, execCmd, spawnCmdWithCallback,execCmdWithCallback,getCorePath, getWebPath, isValidIpv4Subnet, isValidPort, isEmpty, logDir, saveFile, readFile } from './tools'
+import { MODDIR, ETPATH, execCmd, spawnCmdWithCallback, execCmdWithCallback, getCorePath, getWebPath, isValidIpv4Subnet, isValidPort, isEmpty, logDir, saveFile, readFile } from './tools'
 import { useModuleInfoStore } from './stores/status'
 import { useI18n } from './locales'; // 导入所有翻译信息
 import { Codemirror } from "vue-codemirror";
@@ -672,9 +672,9 @@ const startService = () => {
     saveFile(JSON.stringify(commandObj.value), `${ETPATH}/config.json`);
     saveFile(cmdLine, `${ETPATH}/CMDLINE`);
     moduleInfo.serviceState = !moduleInfo.serviceState;
-    if(moduleInfo.serviceState){
+    if (moduleInfo.serviceState) {
       execCmd(`rm -f ${ETPATH}/state/disable`)
-    }else{
+    } else {
       execCmd(`touch ${ETPATH}/state/disable`)
     }
   }
@@ -693,22 +693,46 @@ const init = () => {
       cmd: `sh ${MODDIR}/api.sh status`,
       onSuccess: (data) => {
         console.info(data)
-        // moduleInfo.serviceState = true;
-        readFile(`${ETPATH}/config.json`).then(value => {
-          const configFile = JSON.parse(value)
-          commandObj.value = configFile;
-          fillOptions();
-        }).catch(ex => {
-          showToast(`${ex}`)
-        })
+        
+        //{"enable": "", "privateDeployment": "false", "autoStart": true, "uninstallKeep": false, "version": ""}
+        if (JSON.parse(data).enable == '') {
+          moduleInfo.serviceState = false;
+        } else {
+          moduleInfo.serviceState = true;
+        }
+        if(JSON.parse(data).privateDeployment == 'false'){
+          commandObj.value.privateDeployment = false;
+        }else{ 
+          commandObj.value.privateDeployment = true;
+        }
+        if (JSON.parse(data).autoStart == 'false') {
+          moduleInfo.autoStart = false;
+        } else {
+          moduleInfo.autoStart = true;
+        }
+        if (JSON.parse(data).uninstallKeep == 'false') {
+          moduleInfo.uninstallKeep = false;
+        } else {
+          moduleInfo.uninstallKeep = true;
+        }
+        if (JSON.parse(data).version != '') {
+          moduleInfo.version = JSON.parse(data).version;
+        }
       }, onError: (data) => {
         console.error('获取服务状态失败', data)
         moduleInfo.serviceState = false;
       }
     })
+    readFile(`${ETPATH}/config.json`).then(value => {
+      const configFile = JSON.parse(value)
+      commandObj.value = configFile;
+      fillOptions();
+    }).catch(ex => {
+      showToast(`${ex}`)
+    })
   } catch (error) {
     console.error('配置文件加载异常', error)
-  }finally{
+  } finally {
     closeToast()
   }
 

@@ -2,7 +2,7 @@
 MODDIR=${0%/*}
 now=$(date +"%I:%M %p")
 
-ETLogPATH=/data/adb/easytierForKSU/logs/
+ETLogPATH=/data/adb/easytier/logs/
 
 events="$1"
 monitor_dir="$2"

@@ -4,7 +4,10 @@ export const useModuleInfoStore = defineStore('moduleInfo', {
   state: () => ({
     serviceState: false,
     privateDeployment:false,
-    runMode:'command'
+    runMode:'command',
+    autoStart:true,
+    uninstallKeep:false,
+    version:''
   }),
   getters: {
     getServiceState(state) {
